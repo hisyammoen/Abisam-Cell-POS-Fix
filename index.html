@@ -11,7 +11,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     
-    <!-- Pustaka Barcode & QR Code Scanner -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -171,22 +170,17 @@
                 <input type="text" id="pLabel" placeholder="Kategori / Label (Contoh: MAKANAN)" class="w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal uppercase">
                 
                 <div class="flex items-center gap-2">
-                    <!-- Tombol Upload File -->
                     <button onclick="document.getElementById('pPhoto').click()" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-[10px] uppercase border border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-1 hover:bg-slate-200 transition-colors">
                         <span class="material-icons-round text-sm">image</span> Dari Galeri
                     </button>
-                    <!-- Tombol Ambil Kamera Langsung -->
-                    <button onclick="document.getElementById('pCamera').click()" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-[10px] uppercase border border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-1 hover:bg-slate-200 transition-colors">
-                        <span class="material-icons-round text-sm">photo_camera</span> Buka Kamera
+                    <button onclick="openScannerInput()" class="flex-1 py-2 bg-slate-800 text-white font-bold rounded-xl text-[10px] uppercase flex flex-col items-center justify-center gap-1 hover:bg-slate-900 transition-all active:scale-95">
+                        <span class="material-icons-round text-sm text-primary">view_in_ar</span> Ambil via Scan
                     </button>
                     
                     <input type="file" id="pPhoto" class="hidden" accept="image/*" onchange="handlePhotoUpload(event)">
-                    <!-- Atribut capture="environment" untuk langsung membuka kamera HP -->
-                    <input type="file" id="pCamera" class="hidden" accept="image/*" capture="environment" onchange="handlePhotoUpload(event)">
-                    
                     <img id="pPhotoPreview" class="hidden w-12 h-12 rounded-lg object-cover border dark:border-slate-700 shadow-sm shrink-0 ml-1">
                 </div>
-                <p class="text-[8px] text-slate-400 font-bold uppercase leading-tight -mt-1 mb-2 px-1 text-center">*WAJIB FOTO BAGIAN TENGAH PRODUK UNTUK AKURASI SCAN OTOMATIS*</p>
+                <p class="text-[8px] text-slate-400 font-bold uppercase leading-tight -mt-1 mb-2 px-1 text-center">*POSISIKAN PRODUK DI DALAM KOTAK AGAR MATCHING 100% DI KASIR*</p>
 
                 <button onclick="addProd()" class="w-full py-3 bg-primary text-slate-900 font-black rounded-xl text-xs uppercase shadow-md hover:shadow-lg transition-all active:scale-95">Simpan Barang</button>
             </div>
@@ -257,17 +251,14 @@
     </nav>
 </div>
 
-<!-- Modal 1: Scanner Cerdas (FOTO) Otomatis -->
 <div id="modalScanner" class="fixed inset-0 bg-black/95 z-[120] hidden flex flex-col">
-    <!-- Toast Notifikasi Berhasil -->
     <div id="scanToast" class="absolute top-24 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-xl scale-0 transition-transform duration-300 z-[150] flex items-center gap-2">
         <span class="material-icons-round text-sm">check_circle</span>
         <span id="scanToastText">Ditambahkan</span>
     </div>
-
     <header class="p-4 flex items-center justify-between text-white border-b border-white/10 z-[130]">
         <h2 class="font-black text-sm uppercase flex items-center gap-2">
-            <span class="material-icons-round text-primary">view_in_ar</span> Scanner Foto
+            <span class="material-icons-round text-primary">view_in_ar</span> Scanner Foto Kasir
         </h2>
         <div class="flex items-center gap-2">
             <button id="btnFlashFoto" onclick="toggleFlashFoto()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 text-white flex items-center justify-center">
@@ -291,7 +282,6 @@
     </footer>
 </div>
 
-<!-- Modal 2: Scanner Barcode & QR Code Terpisah -->
 <div id="modalBarcodeScanner" class="fixed inset-0 bg-black/95 z-[120] hidden flex flex-col">
     <header class="p-4 flex items-center justify-between text-white border-b border-white/10 z-[130]">
         <h2 class="font-black text-sm uppercase flex items-center gap-2">
@@ -307,6 +297,32 @@
     <main class="flex-1 bg-black relative flex items-center justify-center">
         <div id="barcodeReader" class="w-full h-full"></div>
     </main>
+</div>
+
+<div id="modalScannerInput" class="fixed inset-0 bg-black/95 z-[120] hidden flex flex-col">
+    <header class="p-4 flex items-center justify-between text-white border-b border-white/10 z-[130]">
+        <h2 class="font-black text-sm uppercase flex items-center gap-2">
+            <span class="material-icons-round text-primary">view_in_ar</span> Scanner Pendaftaran Barang
+        </h2>
+        <div class="flex items-center gap-2">
+            <button id="btnFlashInput" onclick="toggleFlashInput()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 text-white flex items-center justify-center">
+                <span id="iconFlashInput" class="material-icons-round text-lg">flash_off</span>
+            </button>
+            <button onclick="closeScannerInput()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20"><span class="material-icons-round">close</span></button>
+        </div>
+    </header>
+    <main class="flex-1 relative flex items-center justify-center overflow-hidden">
+        <video id="cameraFeedInput" autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
+        <div class="absolute w-64 h-64 border-4 border-dashed border-primary/70 rounded-3xl overflow-hidden shadow-[0_0_0_100vw_rgba(0,0,0,0.6)]">
+            <div class="scan-line"></div>
+        </div>
+    </main>
+    <footer class="p-6 pb-10 flex flex-col items-center justify-center bg-black/50 backdrop-blur-md border-t border-white/10">
+        <button onclick="captureProductFromScanner()" class="px-8 py-4 bg-primary text-slate-900 font-black rounded-2xl shadow-xl uppercase tracking-widest text-xs active:scale-95 transition-transform flex items-center gap-2">
+            <span class="material-icons-round text-base">photo_camera</span> Jepret & Ekstrak dHash
+        </button>
+        <p class="text-white/40 text-[9px] font-bold uppercase tracking-widest text-center mt-3">Posisikan produk pas di tengah kotak pembatas</p>
+    </footer>
 </div>
 
 <div id="pageCheckout" class="fixed inset-0 bg-white dark:bg-slate-950 z-[100] hidden flex flex-col animate-[slideUp_0.3s_ease-out]">
@@ -595,7 +611,7 @@
         try { const canvas = await html2canvas(document.getElementById('areaStruk'), {scale: 2}); canvas.toBlob(blob => { const file = new File([blob], "struk.png", {type: "image/png"}); if (navigator.share) navigator.share({files: [file]}); }); } catch(e) { console.error(e); }
     }
 
-    // --- ALGORITMA BARU: dHash (Difference Hash) & Perfect Center Crop ---
+    // --- ALGORITMA: dHash (Difference Hash) & Perfect Center Crop ---
     function resizeImageForStorage(file, maxSize) {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -623,16 +639,14 @@
             canvas.height = 8;
             const ctx = canvas.getContext('2d');
             
-            // Dapatkan dimensi asli
             let sWidth = source instanceof HTMLVideoElement ? source.videoWidth : source.width;
             let sHeight = source instanceof HTMLVideoElement ? source.videoHeight : source.height;
             
-            // WAJIB: Center Crop Geometris Simetris. Biar perhitungan matematika gambar asli & kamera SAMA PERSIS.
+            // Center Crop Geometris Simetris Sempurna
             const size = Math.min(sWidth, sHeight);
             const sx = (sWidth - size) / 2;
             const sy = (sHeight - size) / 2;
             
-            // Gambar crop bagian tengah tepat ke canvas 9x8
             ctx.drawImage(source, sx, sy, size, size, 0, 0, 9, 8);
             
             const imgData = ctx.getImageData(0,0,9,8).data;
@@ -646,8 +660,6 @@
                 for(let x=0; x<8; x++) {
                     const left = grayscales[y * 9 + x];
                     const right = grayscales[y * 9 + x + 1];
-                    // Jika piksel kiri lebih terang dari kanan, beri nilai 1, sebaliknya 0.
-                    // Ini membunuh masalah "pencahayaan/brightness" kamera.
                     hash += left > right ? '1' : '0';
                 }
             }
@@ -663,10 +675,8 @@
         document.getElementById('pPhotoPreview').classList.remove('hidden');
         
         const img = new Image();
-        img.onload = async () => { 
-            tempPhotoHash = await generatePerceptualHash(img); 
-        };
-        img.src = tempPhotoData; // Hash dibuat SETELAH gambar selesai dimuat dengan ukuran baru
+        img.onload = async () => { tempPhotoHash = await generatePerceptualHash(img); };
+        img.src = tempPhotoData;
     }
 
     function renderKatalog() {
@@ -713,7 +723,6 @@
             document.getElementById('pBarcode').value=''; 
             document.getElementById('pLabel').value='';
             document.getElementById('pPhoto').value='';
-            document.getElementById('pCamera').value=''; // Bersihkan input kamera juga
             document.getElementById('pPhotoPreview').classList.add('hidden');
             document.getElementById('pPhotoPreview').src = '';
             
@@ -731,7 +740,7 @@
     function loadProf() { document.getElementById('dispShopName').innerText = profile.name; document.getElementById('dispShopAddr').innerText = profile.address; document.getElementById('sShopName').innerText = profile.name; document.getElementById('editName').value = profile.name; document.getElementById('editAddr').value = profile.address; if(profile.logo) { document.getElementById('headerLogo').innerHTML = `<img src="${profile.logo}" class="w-full h-full object-cover">`; } else { document.getElementById('headerLogo').innerHTML = `<span class="material-icons-round text-primary text-xl">storefront</span>`; } const gStatus = document.getElementById('googleStatus'); if(profile.googleEmail) { gStatus.innerText = "Terhubung: " + profile.googleEmail; gStatus.className = "text-[10px] font-bold text-green-500 uppercase"; } else { gStatus.innerText = "Belum terhubung"; gStatus.className = "text-[10px] font-bold text-slate-400 uppercase"; } }
     function handleLogoUpload(e) { const fr = new FileReader(); fr.onload = (ev) => { profile.logo = ev.target.result; saveProf(); }; fr.readAsDataURL(e.target.files[0]); }
 
-    // --- MODUL SCANNER 1: FOTO PRODUK (OTOMATIS) ---
+    // --- MODUL SCANNER 1: FOTO PRODUK KASIR (OTOMATIS) ---
     let cameraStream = null;
     let flashFotoOn = false;
     let scanInterval = null;
@@ -746,10 +755,9 @@
         try {
             cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             video.srcObject = cameraStream;
-            // Jalankan scanning secara otomatis setiap 800 milidetik
             scanInterval = setInterval(autoScanProcess, 800);
         } catch (err) {
-            alert("Tidak dapat mengakses kamera.");
+            alert("Tidak dapat mengakses kamera kasir.");
             closeScanner();
         }
     }
@@ -769,9 +777,7 @@
                 flashFotoOn = !flashFotoOn;
                 await track.applyConstraints({ advanced: [{ torch: flashFotoOn }] });
                 document.getElementById('iconFlashFoto').innerText = flashFotoOn ? 'flash_on' : 'flash_off';
-            } else {
-                alert("Flash tidak didukung pada kamera ini.");
-            }
+            } else { alert("Flash tidak didukung."); }
         } catch(e) { alert("Gagal merubah status flash."); }
     }
 
@@ -797,30 +803,23 @@
     async function autoScanProcess() {
         if(isScanningPaused) return;
         const video = document.getElementById('cameraFeed');
-        if(!video.videoWidth) return; // Tunggu video siap
+        if(!video.videoWidth) return; 
 
         const scanHash = await generatePerceptualHash(video);
         let bestMatch = null;
         let lowestDiff = Infinity;
 
         for(let p of products) {
-            // Abaikan jika produk tidak punya hash dHash yang valid (64 bit)
             if(!p.hash || p.hash.length !== 64) continue;
             const diff = getHammingDistance(scanHash, p.hash);
             if(diff < lowestDiff) { lowestDiff = diff; bestMatch = p; }
         }
 
-        // Ambang batas ketat (Toleransi ketidakcocokan maksimal 12 bit dari 64 bit dHash)
         const THRESHOLD = 12; 
         if(bestMatch && lowestDiff <= THRESHOLD) {
-            // Hentikan scan sejenak agar tidak masuk ratusan item
             isScanningPaused = true;
             updateQty(bestMatch.name, 1);
-            
-            // Tampilkan notifikasi toast hijau
             showScanToast(bestMatch.name);
-            
-            // Lanjut scan setelah 2,5 detik
             setTimeout(() => { isScanningPaused = false; }, 2500);
         }
     }
@@ -875,9 +874,7 @@
                     flashBarcodeOn = !flashBarcodeOn;
                     await track.applyConstraints({ advanced: [{ torch: flashBarcodeOn }] });
                     document.getElementById('iconFlashBarcode').innerText = flashBarcodeOn ? 'flash_on' : 'flash_off';
-                } else {
-                    alert("Flash tidak tersedia di perangkat ini.");
-                }
+                } else { alert("Flash tidak tersedia."); }
             } else { alert("Kamera belum siap."); }
         } catch(e) { alert("Gagal mengontrol flash barcode."); }
     }
@@ -888,14 +885,77 @@
             const hit = products.find(p => p.barcode === code);
             if(hit) {
                 updateQty(hit.name, 1);
-                alert(`Barcode Cocok: ${hit.name} (Berhasil ditambah ke keranjang)`);
-            } else {
-                alert(`Kode "${code}" tidak ditemukan di katalog produk.`);
-            }
+                alert(`Barcode Cocok: ${hit.name}`);
+            } else { alert(`Kode "${code}" tidak terdaftar.`); }
         } else if(currentBarcodeTarget === 'produk') {
             document.getElementById('pBarcode').value = code;
-            alert(`Kode Batang Berhasil Dimasukkan: ${code}`);
+            alert(`Kode Batang Masuk: ${code}`);
         }
+    }
+
+    // --- BARU! MODUL SCANNER 3: SCAN INPUT BARANG MASTER (LIVE CAMERA STREAM) ---
+    let cameraStreamInput = null;
+    let flashInputOn = false;
+
+    async function openScannerInput() {
+        document.getElementById('modalScannerInput').classList.remove('hidden');
+        const video = document.getElementById('cameraFeedInput');
+        flashInputOn = false;
+        document.getElementById('iconFlashInput').innerText = 'flash_off';
+        try {
+            cameraStreamInput = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            video.srcObject = cameraStreamInput;
+        } catch (err) {
+            alert("Tidak dapat mengakses kamera pendaftaran.");
+            closeScannerInput();
+        }
+    }
+
+    function closeScannerInput() {
+        document.getElementById('modalScannerInput').classList.add('hidden');
+        if(cameraStreamInput) { cameraStreamInput.getTracks().forEach(t => t.stop()); cameraStreamInput = null; }
+    }
+
+    async function toggleFlashInput() {
+        if(!cameraStreamInput) return;
+        const track = cameraStreamInput.getVideoTracks()[0];
+        try {
+            const caps = track.getCapabilities();
+            if('torch' in caps) {
+                flashInputOn = !flashInputOn;
+                await track.applyConstraints({ advanced: [{ torch: flashInputOn }] });
+                document.getElementById('iconFlashInput').innerText = flashInputOn ? 'flash_on' : 'flash_off';
+            } else { alert("Flash tidak didukung peranti ini."); }
+        } catch(e) { alert("Gagal merubah status flash."); }
+    }
+
+    async function captureProductFromScanner() {
+        const video = document.getElementById('cameraFeedInput');
+        if(!video.videoWidth) return;
+
+        // KUNCI UTAMA: Ambil nilai dHash langsung dari canvas video stream yang aktif!
+        tempPhotoHash = await generatePerceptualHash(video);
+
+        // Render preview gambar mini 1:1 lokal untuk keperluan UI katalog barang
+        const canvas = document.createElement('canvas');
+        canvas.width = 150; canvas.height = 150;
+        const ctx = canvas.getContext('2d');
+
+        let sWidth = video.videoWidth;
+        let sHeight = video.videoHeight;
+        const size = Math.min(sWidth, sHeight);
+        const sx = (sWidth - size) / 2;
+        const sy = (sHeight - size) / 2;
+
+        ctx.drawImage(video, sx, sy, size, size, 0, 0, 150, 150);
+        tempPhotoData = canvas.toDataURL('image/jpeg', 0.6);
+
+        // Tampilkan hasil jepretan di halaman input barang
+        document.getElementById('pPhotoPreview').src = tempPhotoData;
+        document.getElementById('pPhotoPreview').classList.remove('hidden');
+
+        closeScannerInput();
+        alert("Produk berhasil di-scan! dHash geometris dikunci agar sinkron dengan kasir.");
     }
 
     window.onload = () => { if(localStorage.getItem('pos_prof')) { enterApp(); } };
