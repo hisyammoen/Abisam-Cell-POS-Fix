@@ -11,6 +11,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script type="text/javascript">
        (function(){
@@ -38,12 +40,10 @@
         .tab-content.active { display: block; animation: fadeIn 0.3s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        /* Font struk menggunakan Times New Roman */
         #areaStruk { font-family: 'Times New Roman', Times, serif; width: 340px; background: white; color: black; line-height: 1.4; font-size: 13px; }
         .section-card { @apply bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 mb-4; }
         .pay-card { background-color: #4b5563 !important; color: #ffffff !important; padding: 14px 10px; border-radius: 12px; text-align: center; cursor: pointer; font-weight: 800; font-size: 11px; min-width: 85px; margin: 4px; flex: 1; }
         .pay-card.active { background-color: #13ec49 !important; color: #102215 !important; border: 2px solid #102215; }
-        /* Animasi scanner */
         .scan-line { width: 100%; height: 2px; background: #13ec49; position: absolute; top: 0; left: 0; animation: scan 2s infinite linear; box-shadow: 0 0 10px #13ec49; }
         @keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
     </style>
@@ -99,11 +99,17 @@
         <section id="tab-kasir" class="tab-content active space-y-4">
             <div class="section-card sticky top-0 z-30 !p-3">
                 <div class="flex justify-between items-center mb-2 px-2">
-                    <label for="inputCariKasir" class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Filter Pencarian Kasir</label>
-                    <button onclick="openScanner()" class="flex items-center gap-1 bg-slate-800 text-white px-2 py-1 rounded-lg hover:bg-slate-900 active:scale-95 transition-all">
-                        <span class="material-icons-round text-sm text-primary">photo_camera</span>
-                        <span class="text-[9px] font-bold uppercase">Scan Foto</span>
-                    </button>
+                    <label for="inputCariKasir" class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Pencarian / Scan Kasir</label>
+                    <div class="flex gap-1.5">
+                        <button onclick="openScanner()" class="flex items-center gap-1 bg-slate-800 text-white px-2 py-1 rounded-lg hover:bg-slate-900 active:scale-95 transition-all">
+                            <span class="material-icons-round text-xs text-primary">photo_camera</span>
+                            <span class="text-[9px] font-bold uppercase">Foto</span>
+                        </button>
+                        <button onclick="openBarcodeScanner('kasir')" class="flex items-center gap-1 bg-slate-800 text-white px-2 py-1 rounded-lg hover:bg-slate-900 active:scale-95 transition-all">
+                            <span class="material-icons-round text-xs text-primary">qr_code_scanner</span>
+                            <span class="text-[9px] font-bold uppercase">Barcode</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <div id="labelFilterKasir" class="flex gap-2 overflow-x-auto no-scrollbar mb-3 px-1"></div>
@@ -153,6 +159,14 @@
                 
                 <input type="text" id="pName" placeholder="Nama Barang" class="w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal">
                 <input type="number" id="pPrice" placeholder="Harga Jual" class="w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal">
+                
+                <div class="flex gap-2">
+                    <input type="text" id="pBarcode" placeholder="Kode Batang / Barcode / QR (Opsional)" class="flex-1 rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal uppercase">
+                    <button onclick="openBarcodeScanner('produk')" class="px-3 bg-slate-800 text-white rounded-xl text-xs font-bold uppercase flex items-center justify-center gap-1 hover:bg-slate-900 active:scale-95 transition-transform">
+                        <span class="material-icons-round text-xs text-primary">qr_code_scanner</span> Scan
+                    </button>
+                </div>
+
                 <input type="text" id="pLabel" placeholder="Kategori / Label (Contoh: MAKANAN)" class="w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal uppercase">
                 
                 <div class="flex items-center gap-3">
@@ -163,7 +177,7 @@
                     <img id="pPhotoPreview" class="hidden w-12 h-12 rounded-lg object-cover border dark:border-slate-700">
                 </div>
 
-                <button onclick="addProd()" class="w-full py-3 bg-primary text-slate-900 font-black rounded-xl text-xs uppercase shadow-md hover:shadow-lg transition-all active:scale-95">Simpan</button>
+                <button onclick="addProd()" class="w-full py-3 bg-primary text-slate-900 font-black rounded-xl text-xs uppercase shadow-md hover:shadow-lg transition-all active:scale-95">Simpan Barang</button>
             </div>
             
             <div class="section-card !p-3">
@@ -235,13 +249,13 @@
 <div id="modalScanner" class="fixed inset-0 bg-black/95 z-[120] hidden flex flex-col">
     <header class="p-4 flex items-center justify-between text-white border-b border-white/10">
         <h2 class="font-black text-sm uppercase flex items-center gap-2">
-            <span class="material-icons-round text-primary">view_in_ar</span> Scanner Cerdas
+            <span class="material-icons-round text-primary">view_in_ar</span> Scanner Cerdas (Foto)
         </h2>
         <div class="flex items-center gap-2">
-            <button id="btnFlash" onclick="toggleFlash()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 hidden flex items-center justify-center">
-                <span class="material-icons-round text-slate-400">flash_off</span>
+            <button id="btnFlashFoto" onclick="toggleFlashFoto()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 text-white flex items-center justify-center">
+                <span id="iconFlashFoto" class="material-icons-round text-lg">flash_off</span>
             </button>
-            <button onclick="closeScanner()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 flex items-center justify-center"><span class="material-icons-round">close</span></button>
+            <button onclick="closeScanner()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20"><span class="material-icons-round">close</span></button>
         </div>
     </header>
     <main class="flex-1 relative flex items-center justify-center overflow-hidden">
@@ -249,13 +263,30 @@
         <div class="absolute w-64 h-64 border-4 border-primary/50 rounded-3xl overflow-hidden shadow-[0_0_0_100vw_rgba(0,0,0,0.6)]">
             <div class="scan-line"></div>
         </div>
-        <p class="absolute bottom-10 text-white text-xs font-bold uppercase tracking-widest bg-black/50 px-4 py-2 rounded-full backdrop-blur-md text-center mx-4">Arahkan kamera ke produk<br><span class="text-[9px] opacity-70 font-normal">Pastikan cahaya cukup terang</span></p>
+        <p class="absolute bottom-10 text-white text-xs font-bold uppercase tracking-widest bg-black/50 px-4 py-2 rounded-full backdrop-blur-md text-center mx-4">Arahkan foto produk ke kotak<br><span class="text-[9px] opacity-70 font-normal">Pastikan terpusat di dalam kotak</span></p>
     </main>
     <footer class="p-6 pb-10">
         <button onclick="scanAndMatch()" class="w-full py-5 bg-primary text-slate-900 font-black rounded-2xl text-sm uppercase shadow-xl hover:bg-[#0fdc40] transition-transform active:scale-95 flex justify-center items-center gap-2">
             <span class="material-icons-round">camera</span> Deteksi Barang
         </button>
     </footer>
+</div>
+
+<div id="modalBarcodeScanner" class="fixed inset-0 bg-black/95 z-[120] hidden flex flex-col">
+    <header class="p-4 flex items-center justify-between text-white border-b border-white/10">
+        <h2 class="font-black text-sm uppercase flex items-center gap-2">
+            <span class="material-icons-round text-primary">qr_code_scanner</span> Scan Barcode / QR
+        </h2>
+        <div class="flex items-center gap-2">
+            <button id="btnFlashBarcode" onclick="toggleFlashBarcode()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 text-white flex items-center justify-center">
+                <span id="iconFlashBarcode" class="material-icons-round text-lg">flash_off</span>
+            </button>
+            <button onclick="closeBarcodeScanner()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20"><span class="material-icons-round">close</span></button>
+        </div>
+    </header>
+    <main class="flex-1 bg-black relative flex items-center justify-center">
+        <div id="barcodeReader" class="w-full h-full"></div>
+    </main>
 </div>
 
 <div id="pageCheckout" class="fixed inset-0 bg-white dark:bg-slate-950 z-[100] hidden flex flex-col animate-[slideUp_0.3s_ease-out]">
@@ -269,14 +300,14 @@
             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Metode Bayar</p>
             <div class="relative">
                 <select id="payMethod" onchange="handlePayMethodChange()" class="w-full rounded-2xl border-none bg-slate-100 dark:bg-slate-800 font-bold py-4 pl-4 pr-10 appearance-none focus:ring-primary">
-                    <option value="TUNAI">💵 TUNAI / CASH</option>
+                    <option value="TUNAI">💶 TUNAI / CASH</option>
                     <option value="QRIS">📲 QRIS / E-WALLET</option>
                     <option value="TRANSFER">🏦 TRANSFER BANK</option>
                 </select>
                 <span class="material-icons-round absolute right-4 top-4 pointer-events-none">expand_more</span>
             </div>
             <div id="nominalContainer" class="space-y-2">
-                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pilih Uang Pasien</p>
+                <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Pilih Uang Pembayaran</p>
                 <div id="nominalTemplates" class="flex flex-wrap -mx-1"></div>
             </div>
             <div class="relative">
@@ -337,8 +368,8 @@
 
 <script>
     let products = JSON.parse(localStorage.getItem('pos_p')) || [
-        {name: 'PULSA 10K', price: 12000, label: 'DIGITAL', image: '', hash: ''}, 
-        {name: 'TOKEN 20K', price: 23000, label: 'DIGITAL', image: '', hash: ''}
+        {name: 'PULSA 10K', price: 12000, label: 'DIGITAL', image: '', hash: '', barcode: ''}, 
+        {name: 'TOKEN 20K', price: 23000, label: 'DIGITAL', image: '', hash: '', barcode: ''}
     ];
     let transactions = JSON.parse(localStorage.getItem('pos_t')) || [];
     let profile = JSON.parse(localStorage.getItem('pos_prof')) || {name: 'KONTER PRO', address: 'INDONESIA', logo: '', googleEmail: ''};
@@ -382,6 +413,7 @@
     }
     function toggleDarkMode() { document.documentElement.classList.toggle('dark'); }
 
+    // --- FILTER LABELS ---
     function renderLabels() {
         let rawLabels = products.map(p => p.label && p.label.trim() !== '' ? p.label : 'LAINNYA');
         const uniqueLabels = ['ALL', ...new Set(rawLabels)];
@@ -395,11 +427,12 @@
     function setLabelKasir(l) { activeLabelKasir = l; renderLabels(); renderProds(); }
     function setLabelKatalog(l) { activeLabelKatalog = l; renderLabels(); renderKatalog(); }
 
+    // --- KASIR ---
     function renderProds() {
         const query = document.getElementById('inputCariKasir').value.toLowerCase();
         const grid = document.getElementById('gridProduk'); grid.innerHTML = '';
         
-        let filtered = products.filter(p => p.name.toLowerCase().includes(query));
+        let filtered = products.filter(p => p.name.toLowerCase().includes(query) || (p.barcode && p.barcode.toLowerCase().includes(query)));
         if(activeLabelKasir !== 'ALL') {
             filtered = filtered.filter(p => (p.label && p.label.trim() !== '' ? p.label : 'LAINNYA') === activeLabelKasir);
         }
@@ -434,6 +467,7 @@
         if(tQty > 0) { c.classList.remove('hidden'); document.getElementById('footerQty').innerText = tQty + " ITEM"; document.getElementById('footerTotal').innerText = "Rp " + tPrice.toLocaleString(); document.getElementById('finalTotalDisplay').innerText = "Rp " + tPrice.toLocaleString(); } else { c.classList.add('hidden'); }
     }
 
+    // --- CHECKOUT ---
     function openCheckoutPage() { document.getElementById('pageCheckout').classList.remove('hidden'); renderCheckoutItems(); handlePayMethodChange(); }
     function closeCheckoutPage() { document.getElementById('pageCheckout').classList.add('hidden'); }
     function renderCheckoutItems() {
@@ -480,6 +514,7 @@
         closeCheckoutPage(); showStruk(trx); cart = {}; updateCartFooter(); renderProds(); renderTrx(); calcStats();
     }
 
+    // --- STRUK & EMAIL ---
     function showStruk(t) {
         currentTrx = t; 
         document.getElementById('sShopName').innerText = profile.name; document.getElementById('sShopAddr').innerText = profile.address;
@@ -543,6 +578,7 @@
         try { const canvas = await html2canvas(document.getElementById('areaStruk'), {scale: 2}); canvas.toBlob(blob => { const file = new File([blob], "struk.png", {type: "image/png"}); if (navigator.share) navigator.share({files: [file]}); }); } catch(e) { console.error(e); }
     }
 
+    // --- RIWAYAT ---
     function renderTrx() {
         const query = document.getElementById('inputCariRiwayat').value.toLowerCase();
         const list = document.getElementById('listRiwayat'); list.innerHTML = '';
@@ -565,6 +601,7 @@
         doc.save("Laporan-Penjualan.pdf");
     }
 
+    // --- BARANG, IMAGE HANDLING, & HASHING ---
     function resizeImageForStorage(file, maxSize) {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -585,24 +622,22 @@
         });
     }
 
-    // BUGFIX: Menambahkan logika Center-Crop agar perbandingan rasio gambar konsisten
+    // FIX BUG: Modifikasi generatePerceptualHash agar melakukan CENTER CROPPING jika input berasal dari elemen Video Live
     function generatePerceptualHash(source) {
         return new Promise((resolve) => {
             const canvas = document.createElement('canvas');
             canvas.width = 8; canvas.height = 8;
             const ctx = canvas.getContext('2d');
             
-            // Mengambil dimensi asli gambar / video stream
-            let srcWidth = source.videoWidth || source.width || source.naturalWidth || 100;
-            let srcHeight = source.videoHeight || source.height || source.naturalHeight || 100;
-            
-            // Hitung koordinat potong bagian tengah secara persegi sempurna
-            let size = Math.min(srcWidth, srcHeight);
-            let sx = (srcWidth - size) / 2;
-            let sy = (srcHeight - size) / 2;
-            
-            // Draw gambar hasil crop bagian tengah ke matriks 8x8
-            ctx.drawImage(source, sx, sy, size, size, 0, 0, 8, 8);
+            if (source instanceof HTMLVideoElement) {
+                // Potong area tengah saja (sesuai kotak panduan visual scanner)
+                const size = Math.min(source.videoWidth, source.videoHeight);
+                const sx = (source.videoWidth - size) / 2;
+                const sy = (source.videoHeight - size) / 2;
+                ctx.drawImage(source, sx, sy, size, size, 0, 0, 8, 8);
+            } else {
+                ctx.drawImage(source, 0, 0, 8, 8);
+            }
             
             const imgData = ctx.getImageData(0,0,8,8).data;
             let total = 0; const grayscales = [];
@@ -631,7 +666,7 @@
         const query = document.getElementById('inputCariKatalog').value.toLowerCase();
         const list = document.getElementById('listProduk'); list.innerHTML = '';
         
-        let filtered = products.filter(p => p.name.toLowerCase().includes(query));
+        let filtered = products.filter(p => p.name.toLowerCase().includes(query) || (p.barcode && p.barcode.toLowerCase().includes(query)));
         if(activeLabelKatalog !== 'ALL') {
             filtered = filtered.filter(p => (p.label && p.label.trim() !== '' ? p.label : 'LAINNYA') === activeLabelKatalog);
         }
@@ -639,6 +674,7 @@
         filtered.forEach((p) => {
             const realIndex = products.indexOf(p);
             const imgHtml = p.image ? `<img src="${p.image}" class="w-8 h-8 object-cover rounded shadow-sm mr-2">` : `<div class="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center mr-2"><span class="material-icons-round text-xs text-slate-300">image</span></div>`;
+            const barcodeLabel = p.barcode ? `<span class="text-[9px] text-slate-400 font-mono block">BARCODE: ${p.barcode}</span>` : '';
             
             list.innerHTML += `<div class="p-3 bg-white dark:bg-slate-900 rounded-xl flex justify-between items-center border border-slate-50 dark:border-slate-800 group hover:border-primary/50 transition-colors">
                 <div class="flex items-center">
@@ -646,6 +682,7 @@
                     <div class="flex flex-col">
                         <span class="text-[8px] font-black text-slate-400 uppercase leading-tight">${p.label || 'LAINNYA'}</span>
                         <span class="text-xs font-bold uppercase text-slate-700 dark:text-slate-200">${p.name} <span class="text-primary ml-1">Rp ${p.price.toLocaleString()}</span></span>
+                        ${barcodeLabel}
                     </div>
                 </div>
                 <button onclick="delProd(${realIndex})" class="text-slate-300 hover:text-red-500 transition-colors p-2"><span class="material-icons-round text-sm">delete</span></button>
@@ -657,14 +694,16 @@
     function addProd() { 
         const n = document.getElementById('pName').value.toUpperCase(); 
         const p = document.getElementById('pPrice').value; 
+        const b = document.getElementById('pBarcode').value.trim().toUpperCase(); 
         const l = document.getElementById('pLabel').value.toUpperCase() || 'LAINNYA';
         
         if(n && p) { 
-            products.push({name: n, price: Number(p), label: l, image: tempPhotoData, hash: tempPhotoHash}); 
+            products.push({name: n, price: Number(p), label: l, image: tempPhotoData, hash: tempPhotoHash, barcode: b}); 
             
             tempPhotoData = ''; tempPhotoHash = '';
             document.getElementById('pName').value=''; 
             document.getElementById('pPrice').value=''; 
+            document.getElementById('pBarcode').value=''; 
             document.getElementById('pLabel').value='';
             document.getElementById('pPhoto').value='';
             document.getElementById('pPhotoPreview').classList.add('hidden');
@@ -678,81 +717,48 @@
     function delProd(index) { if(confirm('Hapus barang ini dari katalog?')) { products.splice(index, 1); renderLabels(); renderKatalog(); renderProds(); } }
     function importData(e) { const reader = new FileReader(); reader.onload = (ev) => { try { const imported = JSON.parse(ev.target.result); if(Array.isArray(imported)) { products = imported; localStorage.setItem('pos_p', JSON.stringify(products)); renderLabels(); renderKatalog(); renderProds(); alert('Sukses impor!'); } } catch (err) { alert('Gagal!'); } }; reader.readAsText(e.target.files[0]); }
 
+    // --- PROFIL ---
     function calcStats() { const today = new Date().toLocaleDateString('id-ID'); const filt = transactions.filter(t => t.fullDate === today); document.getElementById('countToday').innerText = filt.length; document.getElementById('totalToday').innerText = 'Rp ' + filt.reduce((a,b)=>a+b.total,0).toLocaleString(); }
     function saveProf() { profile.name = document.getElementById('editName').value; profile.address = document.getElementById('editAddr').value; localStorage.setItem('pos_prof', JSON.stringify(profile)); loadProf(); }
     function loadProf() { document.getElementById('dispShopName').innerText = profile.name; document.getElementById('dispShopAddr').innerText = profile.address; document.getElementById('sShopName').innerText = profile.name; document.getElementById('editName').value = profile.name; document.getElementById('editAddr').value = profile.address; if(profile.logo) { document.getElementById('headerLogo').innerHTML = `<img src="${profile.logo}" class="w-full h-full object-cover">`; } else { document.getElementById('headerLogo').innerHTML = `<span class="material-icons-round text-primary text-xl">storefront</span>`; } const gStatus = document.getElementById('googleStatus'); if(profile.googleEmail) { gStatus.innerText = "Terhubung: " + profile.googleEmail; gStatus.className = "text-[10px] font-bold text-green-500 uppercase"; } else { gStatus.innerText = "Belum terhubung"; gStatus.className = "text-[10px] font-bold text-slate-400 uppercase"; } }
     function handleLogoUpload(e) { const fr = new FileReader(); fr.onload = (ev) => { profile.logo = ev.target.result; saveProf(); }; fr.readAsDataURL(e.target.files[0]); }
 
-    // --- SCANNER CERDAS KAMERA ---
+    // --- MODUL SCANNER 1: FOTO PRODUK ---
     let cameraStream = null;
-    let isFlashOn = false;
+    let flashFotoOn = false;
 
     async function openScanner() {
         document.getElementById('modalScanner').classList.remove('hidden');
         const video = document.getElementById('cameraFeed');
+        flashFotoOn = false;
+        document.getElementById('iconFlashFoto').innerText = 'flash_off';
         try {
             cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             video.srcObject = cameraStream;
-
-            // Memeriksa ketersediaan modul hardware lampu flash/torch perangkat setelah trek siap
-            setTimeout(() => {
-                if (cameraStream) {
-                    const track = cameraStream.getVideoTracks()[0];
-                    if (track && track.getCapabilities) {
-                        const capabilities = track.getCapabilities();
-                        if (capabilities.torch) {
-                            document.getElementById('btnFlash').classList.remove('hidden');
-                        } else {
-                            document.getElementById('btnFlash').classList.add('hidden');
-                        }
-                    }
-                }
-            }, 500);
-            isFlashOn = false;
-            updateFlashIcon();
         } catch (err) {
-            alert("Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.");
+            alert("Tidak dapat mengakses kamera.");
             closeScanner();
-        }
-    }
-
-    // Fungsi Pengatur Nyala/Mati Flash Senter
-    function toggleFlash() {
-        if (!cameraStream) return;
-        const track = cameraStream.getVideoTracks()[0];
-        if (track && track.applyConstraints) {
-            isFlashOn = !isFlashOn;
-            track.applyConstraints({
-                advanced: [{ torch: isFlashOn }]
-            }).then(() => {
-                updateFlashIcon();
-            }).catch(err => {
-                console.error("Gagal mengaktifkan flash:", err);
-                isFlashOn = !isFlashOn; 
-            });
-        }
-    }
-
-    function updateFlashIcon() {
-        const btn = document.getElementById('btnFlash');
-        if (btn) {
-            btn.innerHTML = isFlashOn 
-                ? `<span class="material-icons-round text-yellow-400">flash_on</span>` 
-                : `<span class="material-icons-round text-slate-400">flash_off</span>`;
         }
     }
 
     function closeScanner() {
         document.getElementById('modalScanner').classList.add('hidden');
-        if(cameraStream) { 
-            const track = cameraStream.getVideoTracks()[0];
-            if (isFlashOn && track && track.applyConstraints) {
-                track.applyConstraints({ advanced: [{ torch: false }] }).catch(() => {});
+        if(cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+    }
+
+    async function toggleFlashFoto() {
+        if(!cameraStream) return;
+        const track = cameraStream.getVideoTracks()[0];
+        try {
+            const caps = track.getCapabilities();
+            if('torch' in caps) {
+                flashFotoOn = !flashFotoOn;
+                await track.applyConstraints({ advanced: [{ torch: flashFotoOn }] });
+                document.getElementById('iconFlashFoto').innerText = flashFotoOn ? 'flash_on' : 'flash_off';
+            } else {
+                alert("Flash tidak didukung pada kamera ini.");
             }
-            cameraStream.getTracks().forEach(t => t.stop()); 
-        }
-        cameraStream = null;
-        isFlashOn = false;
+        } catch(e) { alert("Gagal merubah status flash."); }
     }
 
     function getHammingDistance(hash1, hash2) {
@@ -768,29 +774,96 @@
         if(!video.videoWidth) { alert("Tunggu kamera memuat gambar..."); return; }
 
         const scanHash = await generatePerceptualHash(video);
-        
         let bestMatch = null;
         let lowestDiff = Infinity;
 
         for(let p of products) {
             if(!p.hash || p.hash.length !== 64) continue;
             const diff = getHammingDistance(scanHash, p.hash);
-            
-            if(diff < lowestDiff) {
-                lowestDiff = diff;
-                bestMatch = p;
-            }
+            if(diff < lowestDiff) { lowestDiff = diff; bestMatch = p; }
         }
 
-        // BUGFIX: Menaikkan batas Threshold kecocokan ke 22 untuk toleransi tingkat cahaya & distorsi real-time
-        const THRESHOLD = 22; 
-
+        const THRESHOLD = 16; 
         if(bestMatch && lowestDiff <= THRESHOLD) {
             updateQty(bestMatch.name, 1);
-            alert(`Produk terdeteksi: ${bestMatch.name}\n(Langsung masuk keranjang)`);
+            alert(`Produk Terdeteksi: ${bestMatch.name}`);
             closeScanner();
         } else {
-            alert("Barang tidak dikenali. \nPastikan foto produk sudah diset dan pencahayaan kamera terang.");
+            alert("Barang tidak dikenali. Coba sesuaikan pencahayaan atau posisikan tepat di tengah kotak.");
+        }
+    }
+
+    // --- MODUL SCANNER 2: BARCODE & QR CODE (Html5Qrcode) ---
+    let html5QrcodeScanner = null;
+    let currentBarcodeTarget = 'kasir'; 
+    let flashBarcodeOn = false;
+
+    function openBarcodeScanner(target) {
+        currentBarcodeTarget = target;
+        document.getElementById('modalBarcodeScanner').classList.remove('hidden');
+        flashBarcodeOn = false;
+        document.getElementById('iconFlashBarcode').innerText = 'flash_off';
+
+        html5QrcodeScanner = new Html5Qrcode("barcodeReader");
+        const config = { 
+            fps: 15, 
+            qrbox: function(width, height) {
+                const minEdge = Math.min(width, height);
+                const boxSize = Math.floor(minEdge * 0.65);
+                return { width: boxSize, height: Math.floor(boxSize * 0.6) };
+            }
+        };
+
+        html5QrcodeScanner.start(
+            { facingMode: "environment" },
+            config,
+            (decodedText) => { handleBarcodeScanned(decodedText); },
+            (error) => { /* Proses scanning berjalan tanpa memicu popup error log */ }
+        ).catch(err => {
+            alert("Gagal mengaktifkan kamera barcode.");
+            closeBarcodeScanner();
+        });
+    }
+
+    function closeBarcodeScanner() {
+        document.getElementById('modalBarcodeScanner').classList.add('hidden');
+        if(html5QrcodeScanner) {
+            html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; }).catch(e => console.log(e));
+        }
+    }
+
+    async function toggleFlashBarcode() {
+        if(!html5QrcodeScanner) return;
+        try {
+            // Mengambil access track video dari DOM Internal Html5Qrcode
+            const videoEl = document.querySelector('#barcodeReader video');
+            if(videoEl && videoEl.srcObject) {
+                const track = videoEl.srcObject.getVideoTracks()[0];
+                const caps = track.getCapabilities();
+                if('torch' in caps) {
+                    flashBarcodeOn = !flashBarcodeOn;
+                    await track.applyConstraints({ advanced: [{ torch: flashBarcodeOn }] });
+                    document.getElementById('iconFlashBarcode').innerText = flashBarcodeOn ? 'flash_on' : 'flash_off';
+                } else {
+                    alert("Flash tidak tersedia di perangkat ini.");
+                }
+            } else { alert("Kamera belum siap."); }
+        } catch(e) { alert("Gagal mengontrol flash barcode."); }
+    }
+
+    function handleBarcodeScanned(code) {
+        closeBarcodeScanner();
+        if(currentBarcodeTarget === 'kasir') {
+            const hit = products.find(p => p.barcode === code);
+            if(hit) {
+                updateQty(hit.name, 1);
+                alert(`Barcode Cocok: ${hit.name} (Berhasil ditambah ke keranjang)`);
+            } else {
+                alert(`Kode "${code}" tidak ditemukan di katalog produk.`);
+            }
+        } else if(currentBarcodeTarget === 'produk') {
+            document.getElementById('pBarcode').value = code;
+            alert(`Kode Batang Berhasil Dimasukkan: ${code}`);
         }
     }
 
