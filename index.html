@@ -237,7 +237,12 @@
         <h2 class="font-black text-sm uppercase flex items-center gap-2">
             <span class="material-icons-round text-primary">view_in_ar</span> Scanner Cerdas
         </h2>
-        <button onclick="closeScanner()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20"><span class="material-icons-round">close</span></button>
+        <div class="flex items-center gap-2">
+            <button id="btnFlash" onclick="toggleFlash()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 hidden flex items-center justify-center">
+                <span class="material-icons-round text-slate-400">flash_off</span>
+            </button>
+            <button onclick="closeScanner()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 flex items-center justify-center"><span class="material-icons-round">close</span></button>
+        </div>
     </header>
     <main class="flex-1 relative flex items-center justify-center overflow-hidden">
         <video id="cameraFeed" autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
@@ -265,8 +270,8 @@
             <div class="relative">
                 <select id="payMethod" onchange="handlePayMethodChange()" class="w-full rounded-2xl border-none bg-slate-100 dark:bg-slate-800 font-bold py-4 pl-4 pr-10 appearance-none focus:ring-primary">
                     <option value="TUNAI">💵 TUNAI / CASH</option>
-                    <option value="QRIS">📱 QRIS / E-WALLET</option>
-                    <option value="TRANSFER">💳 TRANSFER BANK</option>
+                    <option value="QRIS">📲 QRIS / E-WALLET</option>
+                    <option value="TRANSFER">🏦 TRANSFER BANK</option>
                 </select>
                 <span class="material-icons-round absolute right-4 top-4 pointer-events-none">expand_more</span>
             </div>
@@ -331,7 +336,6 @@
 </div>
 
 <script>
-    // Penyesuaian Data Model: ditambah label, image, hash
     let products = JSON.parse(localStorage.getItem('pos_p')) || [
         {name: 'PULSA 10K', price: 12000, label: 'DIGITAL', image: '', hash: ''}, 
         {name: 'TOKEN 20K', price: 23000, label: 'DIGITAL', image: '', hash: ''}
@@ -341,11 +345,9 @@
     let cart = {};
     let currentTrx = null;
     
-    // State Filter Label
     let activeLabelKasir = 'ALL';
     let activeLabelKatalog = 'ALL';
     
-    // State Photo Upload
     let tempPhotoData = '';
     let tempPhotoHash = '';
 
@@ -380,29 +382,23 @@
     }
     function toggleDarkMode() { document.documentElement.classList.toggle('dark'); }
 
-    // --- FILTER LABELS ---
     function renderLabels() {
-        // Ambil semua label unik dari produk yang ada
         let rawLabels = products.map(p => p.label && p.label.trim() !== '' ? p.label : 'LAINNYA');
         const uniqueLabels = ['ALL', ...new Set(rawLabels)];
         
-        // Render ke Kasir
         const kKasir = document.getElementById('labelFilterKasir');
         if(kKasir) kKasir.innerHTML = uniqueLabels.map(l => `<button onclick="setLabelKasir('${l}')" class="px-4 py-2 rounded-full text-[10px] font-black shadow-sm ${activeLabelKasir === l ? 'bg-primary text-slate-900 border border-primary' : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'} whitespace-nowrap active:scale-95 transition-transform">${l}</button>`).join('');
         
-        // Render ke Katalog
         const kKatalog = document.getElementById('labelFilterKatalog');
         if(kKatalog) kKatalog.innerHTML = uniqueLabels.map(l => `<button onclick="setLabelKatalog('${l}')" class="px-4 py-2 rounded-full text-[10px] font-black shadow-sm ${activeLabelKatalog === l ? 'bg-primary text-slate-900 border border-primary' : 'bg-white dark:bg-slate-800 text-slate-500 border border-slate-200 dark:border-slate-700'} whitespace-nowrap active:scale-95 transition-transform">${l}</button>`).join('');
     }
     function setLabelKasir(l) { activeLabelKasir = l; renderLabels(); renderProds(); }
     function setLabelKatalog(l) { activeLabelKatalog = l; renderLabels(); renderKatalog(); }
 
-    // --- KASIR ---
     function renderProds() {
         const query = document.getElementById('inputCariKasir').value.toLowerCase();
         const grid = document.getElementById('gridProduk'); grid.innerHTML = '';
         
-        // Filtering ganda: Pencarian Teks + Label
         let filtered = products.filter(p => p.name.toLowerCase().includes(query));
         if(activeLabelKasir !== 'ALL') {
             filtered = filtered.filter(p => (p.label && p.label.trim() !== '' ? p.label : 'LAINNYA') === activeLabelKasir);
@@ -438,7 +434,6 @@
         if(tQty > 0) { c.classList.remove('hidden'); document.getElementById('footerQty').innerText = tQty + " ITEM"; document.getElementById('footerTotal').innerText = "Rp " + tPrice.toLocaleString(); document.getElementById('finalTotalDisplay').innerText = "Rp " + tPrice.toLocaleString(); } else { c.classList.add('hidden'); }
     }
 
-    // --- CHECKOUT ---
     function openCheckoutPage() { document.getElementById('pageCheckout').classList.remove('hidden'); renderCheckoutItems(); handlePayMethodChange(); }
     function closeCheckoutPage() { document.getElementById('pageCheckout').classList.add('hidden'); }
     function renderCheckoutItems() {
@@ -485,16 +480,14 @@
         closeCheckoutPage(); showStruk(trx); cart = {}; updateCartFooter(); renderProds(); renderTrx(); calcStats();
     }
 
-    // --- STRUK & EMAIL ---
     function showStruk(t) {
-        currentTrx = t; // Simpan ke variabel global untuk proses email
+        currentTrx = t; 
         document.getElementById('sShopName').innerText = profile.name; document.getElementById('sShopAddr').innerText = profile.address;
         document.getElementById('sTrxId').innerText = t.id; document.getElementById('sTrxTime').innerText = t.date + ' ' + t.time;
         const list = document.getElementById('sItemsList'); list.innerHTML = '';
         t.items.forEach(it => { list.innerHTML += `<div class="flex justify-between items-start"><span class="w-1/2">${it.name} <br/><span class="opacity-70">x${it.qty}</span></span><span class="w-1/2 text-right">${(it.price*it.qty).toLocaleString()}</span></div>`; });
         document.getElementById('sDispTotal').innerText = "Rp " + t.total.toLocaleString(); document.getElementById('sDispPay').innerText = t.pay; document.getElementById('sDispCash').innerText = "Rp " + t.cash.toLocaleString(); document.getElementById('sDispChange').innerText = "Rp " + (t.cash - t.total).toLocaleString();
         
-        // Reset Form Email
         document.getElementById('customerEmail').value = '';
         document.getElementById('btnKirimEmail').innerHTML = '<span class="material-icons-round text-sm">email</span> Kirim E-Receipt';
         document.getElementById('btnKirimEmail').disabled = false;
@@ -550,7 +543,6 @@
         try { const canvas = await html2canvas(document.getElementById('areaStruk'), {scale: 2}); canvas.toBlob(blob => { const file = new File([blob], "struk.png", {type: "image/png"}); if (navigator.share) navigator.share({files: [file]}); }); } catch(e) { console.error(e); }
     }
 
-    // --- RIWAYAT ---
     function renderTrx() {
         const query = document.getElementById('inputCariRiwayat').value.toLowerCase();
         const list = document.getElementById('listRiwayat'); list.innerHTML = '';
@@ -573,8 +565,6 @@
         doc.save("Laporan-Penjualan.pdf");
     }
 
-    // --- BARANG, IMAGE HANDLING, & HASHING ---
-    // Fungsi kompresi gambar sebelum disimpan agar localStorage tidak cepat penuh
     function resizeImageForStorage(file, maxSize) {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -587,7 +577,7 @@
                     canvas.width = w; canvas.height = h;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, w, h);
-                    resolve(canvas.toDataURL('image/jpeg', 0.6)); // kompresi 60%
+                    resolve(canvas.toDataURL('image/jpeg', 0.6)); 
                 };
                 img.src = e.target.result;
             };
@@ -595,13 +585,25 @@
         });
     }
 
-    // Membuat matriks kecerahan 8x8 untuk deteksi foto (aHash)
+    // BUGFIX: Menambahkan logika Center-Crop agar perbandingan rasio gambar konsisten
     function generatePerceptualHash(source) {
         return new Promise((resolve) => {
             const canvas = document.createElement('canvas');
             canvas.width = 8; canvas.height = 8;
             const ctx = canvas.getContext('2d');
-            ctx.drawImage(source, 0, 0, 8, 8);
+            
+            // Mengambil dimensi asli gambar / video stream
+            let srcWidth = source.videoWidth || source.width || source.naturalWidth || 100;
+            let srcHeight = source.videoHeight || source.height || source.naturalHeight || 100;
+            
+            // Hitung koordinat potong bagian tengah secara persegi sempurna
+            let size = Math.min(srcWidth, srcHeight);
+            let sx = (srcWidth - size) / 2;
+            let sy = (srcHeight - size) / 2;
+            
+            // Draw gambar hasil crop bagian tengah ke matriks 8x8
+            ctx.drawImage(source, sx, sy, size, size, 0, 0, 8, 8);
+            
             const imgData = ctx.getImageData(0,0,8,8).data;
             let total = 0; const grayscales = [];
             for(let i=0; i<imgData.length; i+=4) {
@@ -609,7 +611,6 @@
                 grayscales.push(gray); total += gray;
             }
             const avg = total / 64;
-            // Kembalikan dalam bentuk string biner (panjang 64)
             resolve(grayscales.map(g => g >= avg ? '1' : '0').join(''));
         });
     }
@@ -617,11 +618,10 @@
     async function handlePhotoUpload(e) {
         const file = e.target.files[0];
         if(!file) return;
-        tempPhotoData = await resizeImageForStorage(file, 150); // Resize untuk tampilan List
+        tempPhotoData = await resizeImageForStorage(file, 150); 
         document.getElementById('pPhotoPreview').src = tempPhotoData;
         document.getElementById('pPhotoPreview').classList.remove('hidden');
         
-        // Buat hash pengenalan gambar untuk produk ini
         const img = new Image();
         img.onload = async () => { tempPhotoHash = await generatePerceptualHash(img); };
         img.src = tempPhotoData;
@@ -631,7 +631,6 @@
         const query = document.getElementById('inputCariKatalog').value.toLowerCase();
         const list = document.getElementById('listProduk'); list.innerHTML = '';
         
-        // Filtering ganda Katalog: Teks + Label
         let filtered = products.filter(p => p.name.toLowerCase().includes(query));
         if(activeLabelKatalog !== 'ALL') {
             filtered = filtered.filter(p => (p.label && p.label.trim() !== '' ? p.label : 'LAINNYA') === activeLabelKatalog);
@@ -663,7 +662,6 @@
         if(n && p) { 
             products.push({name: n, price: Number(p), label: l, image: tempPhotoData, hash: tempPhotoHash}); 
             
-            // Reset state
             tempPhotoData = ''; tempPhotoHash = '';
             document.getElementById('pName').value=''; 
             document.getElementById('pPrice').value=''; 
@@ -672,7 +670,6 @@
             document.getElementById('pPhotoPreview').classList.add('hidden');
             document.getElementById('pPhotoPreview').src = '';
             
-            // Refresh List dan Filter
             renderLabels(); renderKatalog(); renderProds(); 
             alert('Barang disimpan!'); 
         } else { alert('Isi Nama dan Harga Barang!'); } 
@@ -681,7 +678,6 @@
     function delProd(index) { if(confirm('Hapus barang ini dari katalog?')) { products.splice(index, 1); renderLabels(); renderKatalog(); renderProds(); } }
     function importData(e) { const reader = new FileReader(); reader.onload = (ev) => { try { const imported = JSON.parse(ev.target.result); if(Array.isArray(imported)) { products = imported; localStorage.setItem('pos_p', JSON.stringify(products)); renderLabels(); renderKatalog(); renderProds(); alert('Sukses impor!'); } } catch (err) { alert('Gagal!'); } }; reader.readAsText(e.target.files[0]); }
 
-    // --- PROFIL ---
     function calcStats() { const today = new Date().toLocaleDateString('id-ID'); const filt = transactions.filter(t => t.fullDate === today); document.getElementById('countToday').innerText = filt.length; document.getElementById('totalToday').innerText = 'Rp ' + filt.reduce((a,b)=>a+b.total,0).toLocaleString(); }
     function saveProf() { profile.name = document.getElementById('editName').value; profile.address = document.getElementById('editAddr').value; localStorage.setItem('pos_prof', JSON.stringify(profile)); loadProf(); }
     function loadProf() { document.getElementById('dispShopName').innerText = profile.name; document.getElementById('dispShopAddr').innerText = profile.address; document.getElementById('sShopName').innerText = profile.name; document.getElementById('editName').value = profile.name; document.getElementById('editAddr').value = profile.address; if(profile.logo) { document.getElementById('headerLogo').innerHTML = `<img src="${profile.logo}" class="w-full h-full object-cover">`; } else { document.getElementById('headerLogo').innerHTML = `<span class="material-icons-round text-primary text-xl">storefront</span>`; } const gStatus = document.getElementById('googleStatus'); if(profile.googleEmail) { gStatus.innerText = "Terhubung: " + profile.googleEmail; gStatus.className = "text-[10px] font-bold text-green-500 uppercase"; } else { gStatus.innerText = "Belum terhubung"; gStatus.className = "text-[10px] font-bold text-slate-400 uppercase"; } }
@@ -689,26 +685,76 @@
 
     // --- SCANNER CERDAS KAMERA ---
     let cameraStream = null;
+    let isFlashOn = false;
 
     async function openScanner() {
         document.getElementById('modalScanner').classList.remove('hidden');
         const video = document.getElementById('cameraFeed');
         try {
-            // Minta akses kamera belakang
             cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             video.srcObject = cameraStream;
+
+            // Memeriksa ketersediaan modul hardware lampu flash/torch perangkat setelah trek siap
+            setTimeout(() => {
+                if (cameraStream) {
+                    const track = cameraStream.getVideoTracks()[0];
+                    if (track && track.getCapabilities) {
+                        const capabilities = track.getCapabilities();
+                        if (capabilities.torch) {
+                            document.getElementById('btnFlash').classList.remove('hidden');
+                        } else {
+                            document.getElementById('btnFlash').classList.add('hidden');
+                        }
+                    }
+                }
+            }, 500);
+            isFlashOn = false;
+            updateFlashIcon();
         } catch (err) {
             alert("Tidak dapat mengakses kamera. Pastikan izin kamera diberikan.");
             closeScanner();
         }
     }
 
-    function closeScanner() {
-        document.getElementById('modalScanner').classList.add('hidden');
-        if(cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); }
+    // Fungsi Pengatur Nyala/Mati Flash Senter
+    function toggleFlash() {
+        if (!cameraStream) return;
+        const track = cameraStream.getVideoTracks()[0];
+        if (track && track.applyConstraints) {
+            isFlashOn = !isFlashOn;
+            track.applyConstraints({
+                advanced: [{ torch: isFlashOn }]
+            }).then(() => {
+                updateFlashIcon();
+            }).catch(err => {
+                console.error("Gagal mengaktifkan flash:", err);
+                isFlashOn = !isFlashOn; 
+            });
+        }
     }
 
-    // Fungsi menghitung perbedaan bit dari 2 hash (Hamming Distance)
+    function updateFlashIcon() {
+        const btn = document.getElementById('btnFlash');
+        if (btn) {
+            btn.innerHTML = isFlashOn 
+                ? `<span class="material-icons-round text-yellow-400">flash_on</span>` 
+                : `<span class="material-icons-round text-slate-400">flash_off</span>`;
+        }
+    }
+
+    function closeScanner() {
+        document.getElementById('modalScanner').classList.add('hidden');
+        if(cameraStream) { 
+            const track = cameraStream.getVideoTracks()[0];
+            if (isFlashOn && track && track.applyConstraints) {
+                track.applyConstraints({ advanced: [{ torch: false }] }).catch(() => {});
+            }
+            cameraStream.getTracks().forEach(t => t.stop()); 
+        }
+        cameraStream = null;
+        isFlashOn = false;
+    }
+
     function getHammingDistance(hash1, hash2) {
         let distance = 0;
         for (let i = 0; i < hash1.length; i++) {
@@ -721,13 +767,11 @@
         const video = document.getElementById('cameraFeed');
         if(!video.videoWidth) { alert("Tunggu kamera memuat gambar..."); return; }
 
-        // Ekstrak hash dari frame video saat ini
         const scanHash = await generatePerceptualHash(video);
         
         let bestMatch = null;
         let lowestDiff = Infinity;
 
-        // Bandingkan dengan semua produk yang punya foto
         for(let p of products) {
             if(!p.hash || p.hash.length !== 64) continue;
             const diff = getHammingDistance(scanHash, p.hash);
@@ -738,9 +782,8 @@
             }
         }
 
-        // Semakin kecil nilai distance, semakin mirip. 
-        // 15 - 20 adalah ambang batas (Threshold) wajar karena cahaya kamera & sudut pandang pasti berbeda.
-        const THRESHOLD = 18; 
+        // BUGFIX: Menaikkan batas Threshold kecocokan ke 22 untuk toleransi tingkat cahaya & distorsi real-time
+        const THRESHOLD = 22; 
 
         if(bestMatch && lowestDiff <= THRESHOLD) {
             updateQty(bestMatch.name, 1);
