@@ -11,6 +11,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     
+    <!-- Pustaka Barcode & QR Code Scanner -->
     <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -161,7 +162,7 @@
                 <input type="number" id="pPrice" placeholder="Harga Jual" class="w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal">
                 
                 <div class="flex gap-2">
-                    <input type="text" id="pBarcode" placeholder="Kode Batang / Barcode / QR (Opsional)" class="flex-1 rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal uppercase">
+                    <input type="text" id="pBarcode" placeholder="Kode Batang / QR (Opsional)" class="flex-1 rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal uppercase">
                     <button onclick="openBarcodeScanner('produk')" class="px-3 bg-slate-800 text-white rounded-xl text-xs font-bold uppercase flex items-center justify-center gap-1 hover:bg-slate-900 active:scale-95 transition-transform">
                         <span class="material-icons-round text-xs text-primary">qr_code_scanner</span> Scan
                     </button>
@@ -169,14 +170,23 @@
 
                 <input type="text" id="pLabel" placeholder="Kategori / Label (Contoh: MAKANAN)" class="w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal uppercase">
                 
-                <div class="flex items-center gap-3">
-                    <button onclick="document.getElementById('pPhoto').click()" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-[10px] uppercase border border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center gap-2 hover:bg-slate-200">
-                        <span class="material-icons-round text-sm">add_a_photo</span> Unggah Foto
+                <div class="flex items-center gap-2">
+                    <!-- Tombol Upload File -->
+                    <button onclick="document.getElementById('pPhoto').click()" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-[10px] uppercase border border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-1 hover:bg-slate-200 transition-colors">
+                        <span class="material-icons-round text-sm">image</span> Dari Galeri
                     </button>
+                    <!-- Tombol Ambil Kamera Langsung -->
+                    <button onclick="document.getElementById('pCamera').click()" class="flex-1 py-2 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-[10px] uppercase border border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center justify-center gap-1 hover:bg-slate-200 transition-colors">
+                        <span class="material-icons-round text-sm">photo_camera</span> Buka Kamera
+                    </button>
+                    
                     <input type="file" id="pPhoto" class="hidden" accept="image/*" onchange="handlePhotoUpload(event)">
-                    <img id="pPhotoPreview" class="hidden w-12 h-12 rounded-lg object-cover border dark:border-slate-700">
+                    <!-- Atribut capture="environment" untuk langsung membuka kamera HP -->
+                    <input type="file" id="pCamera" class="hidden" accept="image/*" capture="environment" onchange="handlePhotoUpload(event)">
+                    
+                    <img id="pPhotoPreview" class="hidden w-12 h-12 rounded-lg object-cover border dark:border-slate-700 shadow-sm shrink-0 ml-1">
                 </div>
-                <p class="text-[8px] text-slate-400 font-bold uppercase leading-tight -mt-1 mb-2 px-1 text-center">*WAJIB UNGGAH FOTO BAGIAN TENGAH PRODUK UNTUK AKURASI SCAN OTOMATIS*</p>
+                <p class="text-[8px] text-slate-400 font-bold uppercase leading-tight -mt-1 mb-2 px-1 text-center">*WAJIB FOTO BAGIAN TENGAH PRODUK UNTUK AKURASI SCAN OTOMATIS*</p>
 
                 <button onclick="addProd()" class="w-full py-3 bg-primary text-slate-900 font-black rounded-xl text-xs uppercase shadow-md hover:shadow-lg transition-all active:scale-95">Simpan Barang</button>
             </div>
@@ -247,7 +257,9 @@
     </nav>
 </div>
 
+<!-- Modal 1: Scanner Cerdas (FOTO) Otomatis -->
 <div id="modalScanner" class="fixed inset-0 bg-black/95 z-[120] hidden flex flex-col">
+    <!-- Toast Notifikasi Berhasil -->
     <div id="scanToast" class="absolute top-24 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-xl scale-0 transition-transform duration-300 z-[150] flex items-center gap-2">
         <span class="material-icons-round text-sm">check_circle</span>
         <span id="scanToastText">Ditambahkan</span>
@@ -279,6 +291,7 @@
     </footer>
 </div>
 
+<!-- Modal 2: Scanner Barcode & QR Code Terpisah -->
 <div id="modalBarcodeScanner" class="fixed inset-0 bg-black/95 z-[120] hidden flex flex-col">
     <header class="p-4 flex items-center justify-between text-white border-b border-white/10 z-[130]">
         <h2 class="font-black text-sm uppercase flex items-center gap-2">
@@ -582,29 +595,6 @@
         try { const canvas = await html2canvas(document.getElementById('areaStruk'), {scale: 2}); canvas.toBlob(blob => { const file = new File([blob], "struk.png", {type: "image/png"}); if (navigator.share) navigator.share({files: [file]}); }); } catch(e) { console.error(e); }
     }
 
-    // --- RIWAYAT ---
-    function renderTrx() {
-        const query = document.getElementById('inputCariRiwayat').value.toLowerCase();
-        const list = document.getElementById('listRiwayat'); list.innerHTML = '';
-        const filtered = transactions.filter(t => t.id.toLowerCase().includes(query));
-        filtered.forEach((t) => {
-            const realIndex = transactions.indexOf(t); 
-            list.innerHTML += `<div class="bg-white dark:bg-slate-900 p-4 rounded-2xl flex justify-between items-center shadow-sm border border-slate-50 dark:border-slate-800"><div><div class="flex items-center gap-2"><span class="text-[10px] font-black uppercase bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded text-slate-500">${t.pay}</span><p class="text-[10px] font-black uppercase text-slate-800 dark:text-white">${t.id}</p></div><p class="text-[9px] opacity-50 uppercase mt-1">${t.date} • ${t.items.length} Barang</p></div><div class="flex items-center gap-2"><p class="font-black text-xs text-primary mr-2">Rp ${t.total.toLocaleString()}</p><button onclick="reprint(${realIndex})" class="w-8 h-8 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center text-slate-500 hover:bg-slate-200"><span class="material-icons-round text-sm">print</span></button><button onclick="delTrx(${realIndex})" class="w-8 h-8 bg-red-50 dark:bg-red-900/20 text-red-500 rounded-lg flex items-center justify-center hover:bg-red-100"><span class="material-icons-round text-sm">delete</span></button></div></div>`;
-        });
-    }
-    function reprint(i) { showStruk(transactions[i]); }
-    function delTrx(index) { if(confirm('Hapus riwayat transaksi ini?')) { transactions.splice(index, 1); localStorage.setItem('pos_t', JSON.stringify(transactions)); renderTrx(); calcStats(); } }
-    function clearAllTrx() { if(confirm('Hapus SEMUA riwayat transaksi?')) { transactions = []; localStorage.setItem('pos_t', JSON.stringify(transactions)); renderTrx(); calcStats(); } }
-
-    function downloadReport() {
-        const { jsPDF } = window.jspdf; const doc = new jsPDF();
-        doc.setFontSize(16); doc.text("LAPORAN PENJUALAN - " + profile.name, 14, 15);
-        doc.setFontSize(10); doc.text("Tanggal Cetak: " + new Date().toLocaleDateString(), 14, 22);
-        const tableData = transactions.map(t => [t.date + ' ' + t.time, t.id, t.items.map(i => `${i.name} (x${i.qty})`).join(', '), t.pay, "Rp " + t.total.toLocaleString()]);
-        doc.autoTable({ head: [['Waktu', 'ID TRX', 'Item', 'Metode', 'Total']], body: tableData, startY: 28, styles: { fontSize: 8 }, headStyles: { fillColor: [19, 236, 73] } });
-        doc.save("Laporan-Penjualan.pdf");
-    }
-
     // --- ALGORITMA BARU: dHash (Difference Hash) & Perfect Center Crop ---
     function resizeImageForStorage(file, maxSize) {
         return new Promise((resolve) => {
@@ -723,6 +713,7 @@
             document.getElementById('pBarcode').value=''; 
             document.getElementById('pLabel').value='';
             document.getElementById('pPhoto').value='';
+            document.getElementById('pCamera').value=''; // Bersihkan input kamera juga
             document.getElementById('pPhotoPreview').classList.add('hidden');
             document.getElementById('pPhotoPreview').src = '';
             
