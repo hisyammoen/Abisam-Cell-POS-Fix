@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>ABISAM POS - v7.1 Ultimate</title>
+    <title>ABISAM POS - AI Vision Ultimate</title>
     
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
@@ -52,6 +52,11 @@
     </style>
 </head>
 <body class="bg-[#f6f8f6] dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen">
+
+<div id="globalToast" class="fixed top-10 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-2xl scale-0 transition-transform duration-300 z-[9999] flex items-center gap-2">
+    <span id="globalToastIcon" class="material-icons-round text-sm">info</span>
+    <span id="globalToastText">Notifikasi</span>
+</div>
 
 <div id="page-auth" class="flex items-center justify-center min-h-screen p-6 z-50 relative bg-[#f6f8f6] dark:bg-slate-950">
     <div class="w-full max-w-md bg-white dark:bg-slate-900 rounded-[2.5rem] shadow-2xl p-10 text-center border dark:border-slate-800">
@@ -103,9 +108,9 @@
             <div class="section-card sticky top-0 z-30 !p-3">
                 <div class="flex justify-between items-center mb-2 px-2">
                     <label for="inputCariKasir" class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Filter Pencarian Kasir</label>
-                    <button onclick="openScanner()" class="flex items-center gap-1 bg-slate-800 text-white px-2 py-1 rounded-lg hover:bg-slate-900 active:scale-95 transition-all">
-                        <span class="material-icons-round text-sm text-primary">photo_camera</span>
-                        <span class="text-[9px] font-bold uppercase">Scan Cerdas AI</span>
+                    <button id="btnScanKasir" onclick="openScanner()" class="flex items-center gap-1 bg-slate-800 text-white px-2 py-1 rounded-lg hover:bg-slate-900 active:scale-95 transition-all opacity-50 cursor-not-allowed" disabled>
+                        <span class="material-icons-round text-xs text-yellow-500 animate-spin">sync</span>
+                        <span class="text-[9px] font-bold uppercase">Memuat AI...</span>
                     </button>
                 </div>
                 
@@ -159,8 +164,8 @@
                 <input type="text" id="pLabel" placeholder="Kategori / Label (Contoh: MAKANAN)" class="w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal uppercase">
                 
                 <div class="flex items-center gap-3">
-                    <button onclick="document.getElementById('pPhoto').click()" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-[10px] uppercase border border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center gap-2 hover:bg-slate-200">
-                        <span class="material-icons-round text-sm">add_a_photo</span> Rekam Karakteristik Gambar (AI)
+                    <button id="btnUploadFoto" onclick="document.getElementById('pPhoto').click()" class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-[10px] uppercase border border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center gap-2 hover:bg-slate-200 opacity-50 cursor-not-allowed" disabled>
+                        <span class="material-icons-round text-sm animate-spin">sync</span> Tunggu AI...
                     </button>
                     <input type="file" id="pPhoto" class="hidden" accept="image/*" onchange="handlePhotoUpload(event)">
                     <img id="pPhotoPreview" class="hidden w-12 h-12 rounded-lg object-cover border dark:border-slate-700">
@@ -334,7 +339,7 @@
 </div>
 
 <script>
-    // State Data Model: Menggunakan field 'features' berbasis Vektor Array AI MobileNet
+    // State Data Model
     let products = JSON.parse(localStorage.getItem('pos_p')) || [
         {name: 'PULSA 10K', price: 12000, label: 'DIGITAL', image: '', features: null}, 
         {name: 'TOKEN 20K', price: 23000, label: 'DIGITAL', image: '', features: null}
@@ -354,16 +359,70 @@
     let netModel = null;
     let isAiLoaded = false;
 
-    // Fungsi Inisialisasi Otak AI Jaringan Saraf Tiruan MobileNet (Client-side)
+    // --- FUNGSI TOAST (NOTIFIKASI NON-BLOCKING) ---
+    function showToast(text, type = 'success') {
+        const toast = document.getElementById('globalToast');
+        const icon = document.getElementById('globalToastIcon');
+        document.getElementById('globalToastText').innerText = text;
+        
+        if (type === 'success') {
+            toast.className = "fixed top-10 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-xl scale-100 transition-transform duration-300 z-[9999] flex items-center gap-2";
+            icon.innerText = 'check_circle';
+        } else if (type === 'warning') {
+            toast.className = "fixed top-10 left-1/2 -translate-x-1/2 bg-yellow-500 text-slate-900 px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-xl scale-100 transition-transform duration-300 z-[9999] flex items-center gap-2";
+            icon.innerText = 'hourglass_top';
+        } else if (type === 'error') {
+            toast.className = "fixed top-10 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-xl scale-100 transition-transform duration-300 z-[9999] flex items-center gap-2";
+            icon.innerText = 'error';
+        }
+        
+        setTimeout(() => { toast.classList.replace('scale-100', 'scale-0'); }, 3500);
+    }
+
+    // --- UI CONTROLLER UNTUK STATUS AI ---
+    function updateAiUiState(isReady) {
+        const btnKasir = document.getElementById('btnScanKasir');
+        const btnUpload = document.getElementById('btnUploadFoto');
+        
+        if (!isReady) {
+            if (btnKasir) {
+                btnKasir.disabled = true;
+                btnKasir.classList.add('opacity-50', 'cursor-not-allowed');
+                btnKasir.innerHTML = `<span class="material-icons-round text-xs text-yellow-400 animate-spin">sync</span> <span class="text-[9px] font-bold uppercase">Memuat AI...</span>`;
+            }
+            if (btnUpload) {
+                btnUpload.disabled = true;
+                btnUpload.classList.add('opacity-50', 'cursor-not-allowed');
+                btnUpload.innerHTML = `<span class="material-icons-round text-sm text-yellow-500 animate-spin">sync</span> Tunggu AI...`;
+            }
+        } else {
+            if (btnKasir) {
+                btnKasir.disabled = false;
+                btnKasir.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnKasir.innerHTML = `<span class="material-icons-round text-xs text-primary">photo_camera</span> <span class="text-[9px] font-bold uppercase">Scan Cerdas AI</span>`;
+            }
+            if (btnUpload) {
+                btnUpload.disabled = false;
+                btnUpload.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnUpload.innerHTML = `<span class="material-icons-round text-sm">add_a_photo</span> Rekam Karakteristik AI`;
+            }
+        }
+    }
+
+    // --- INISIALISASI OTAK AI (BERJALAN DI LATAR BELAKANG) ---
     async function initAI() {
         if (isAiLoaded) return;
         try {
+            updateAiUiState(false);
             console.log("Memuat Jaringan Otak Tiruan AI (MobileNet Extractor)...");
             netModel = await mobilenet.load();
             isAiLoaded = true;
-            console.log("Sistem AI Sukses Dimuat! Siap memindai memori karakteristik objek.");
+            console.log("Sistem AI Sukses Dimuat!");
+            updateAiUiState(true);
+            showToast("Sistem Cerdas AI Siap Digunakan!", "success");
         } catch (error) {
-            console.error("Gagal memicu subsystem Tensorflow/MobileNet:", error);
+            console.error("Gagal memicu subsystem Tensorflow:", error);
+            showToast("Gagal memuat AI. Pastikan internet aktif.", "error");
         }
     }
 
@@ -371,7 +430,7 @@
         const responsePayload = parseJwt(response.credential);
         if(document.getElementById('page-auth').classList.contains('hidden')) {
             profile.googleEmail = responsePayload.email; saveProf();
-            alert('Berhasil terhubung dengan: ' + responsePayload.email); loadProf();
+            showToast('Berhasil terhubung: ' + responsePayload.email, 'success'); loadProf();
         } else { enterApp(); }
     }
     function parseJwt(token) {
@@ -385,7 +444,7 @@
         document.getElementById('page-auth').classList.add('hidden'); 
         document.getElementById('page-dashboard').classList.remove('hidden'); 
         init(); 
-        initAI(); // Menjamin model AI langsung memuat saat masuk dashboard
+        initAI(); 
     }
     function logout() { if(confirm('Yakin ingin keluar?')) { document.getElementById('page-dashboard').classList.add('hidden'); document.getElementById('page-auth').classList.remove('hidden'); cart={}; updateCartFooter(); } }
 
@@ -612,11 +671,15 @@
         });
     }
 
-    // Proses Ekstraksi Ciri Jaringan Saraf Tiruan Menggunakan MobileNet Embedding
+    // Proses Ekstraksi Ciri Jaringan Saraf Tiruan
     async function handlePhotoUpload(e) {
         const file = e.target.files[0];
         if(!file) return;
-        if(!isAiLoaded) { alert("Sistem visual AI sedang memuat modul intinya, mohon tunggu sebentar..."); return; }
+        
+        if(!isAiLoaded) { 
+            showToast("Sistem visual AI sedang memuat modul intinya, tunggu sebentar...", "warning"); 
+            return; 
+        }
 
         tempPhotoData = await resizeImageForStorage(file, 150); 
         document.getElementById('pPhotoPreview').src = tempPhotoData;
@@ -625,11 +688,11 @@
         const img = new Image();
         img.onload = async () => { 
             try {
-                // infer(img, true) mengembalikan high-level activation vector (1024 dimensi ciri geometris objek)
                 const activation = netModel.infer(img, true);
                 tempFeatures = Array.from(activation.dataSync()); 
-                activation.dispose(); // Membuka kembali memori grafis web agar tidak lag
+                activation.dispose(); 
                 console.log("Karakteristik unik objek (bentuk, kontur warna, tulisan) berhasil diingat AI!");
+                showToast("Memori Visual Tersimpan!", "success");
             } catch(err) {
                 console.error("Gagal melakukan kalkulasi ekstraksi AI:", err);
             }
@@ -681,7 +744,7 @@
             document.getElementById('pPhotoPreview').src = '';
             
             renderLabels(); renderKatalog(); renderProds(); 
-            alert('Barang disimpan & ciri visualnya direkam oleh AI!'); 
+            showToast('Barang Disimpan & Diingat AI!', 'success');
         } else { alert('Isi Nama dan Harga Barang!'); } 
     }
     
@@ -698,7 +761,10 @@
     let cameraStream = null;
 
     async function openScanner() {
-        if(!isAiLoaded) { alert("Sistem visual cerdas AI sedang bersiap. Tunggu beberapa detik..."); return; }
+        if(!isAiLoaded) { 
+            showToast("Engine AI belum siap mendeteksi. Mohon tunggu.", "warning");
+            return; 
+        }
         document.getElementById('modalScanner').classList.remove('hidden');
         const video = document.getElementById('cameraFeed');
         try {
@@ -715,7 +781,6 @@
         if(cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); }
     }
 
-    // Menghitung kedekatan sudut spasial dari memori karakteristik (Cosine Similarity)
     function calculateCosineSimilarity(vecA, vecB) {
         if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
         let dotProduct = 0.0;
@@ -733,9 +798,8 @@
     async function scanAndMatch() {
         const video = document.getElementById('cameraFeed');
         if(!video.videoWidth) { alert("Tunggu kamera memuat gambar..."); return; }
-        if(!isAiLoaded) { alert("Engine AI belum siap mendeteksi."); return; }
+        if(!isAiLoaded) { showToast("Engine AI belum siap.", "error"); return; }
 
-        // 1. Ambil frame real-time dari video feed, konversi menjadi array ciri visual abstrak
         let liveFeatures = null;
         try {
             const liveActivation = netModel.infer(video, true);
@@ -749,7 +813,6 @@
         let bestMatch = null;
         let highestSimilarity = -1;
 
-        // 2. Cocokkan ingatan karakteristik yang live dengan data awal barang di database
         for(let p of products) {
             if(!p.features || p.features.length === 0) continue;
             const similarity = calculateCosineSimilarity(liveFeatures, p.features);
@@ -760,12 +823,11 @@
             }
         }
 
-        // 3. Batas akurasi pengenalan (0.85 artinya tingkat kemiripan ingatan ciri minimal 85%)
         const THRESHOLD = 0.85; 
 
         if(bestMatch && highestSimilarity >= THRESHOLD) {
             updateQty(bestMatch.name, 1);
-            alert(`AI Berhasil Mengenali Ciri Barang!\n\nProduk: ${bestMatch.name}\nAkurasi Kecocokan: ${(highestSimilarity * 100).toFixed(1)}%\n(Otomatis masuk keranjang)`);
+            showToast(`${bestMatch.name} - ${(highestSimilarity * 100).toFixed(1)}%`, 'success');
             closeScanner();
         } else {
             alert("Barang tidak dikenali!\n\nAI tidak menemukan kesamaan pola bentuk, warna, atau struktur tulisan yang cocok di katalog.");
@@ -773,7 +835,7 @@
     }
 
     window.onload = () => { 
-        initAI(); // Mulai load model AI secara background sejak halaman terbuka
+        initAI(); 
         if(localStorage.getItem('pos_prof')) { enterApp(); } 
     };
 </script>
