@@ -276,12 +276,11 @@
             <div class="scan-line"></div>
         </div>
     </main>
-    <footer class="p-8 pb-12 flex flex-col items-center justify-center bg-black/50 backdrop-blur-md border-t border-white/10">
-        <div class="flex items-center gap-2 text-primary animate-pulse mb-1">
-            <span class="material-icons-round text-2xl">radar</span>
-            <span class="font-black text-sm uppercase tracking-widest">Memindai Otomatis...</span>
-        </div>
-        <p class="text-white/60 text-[10px] font-bold uppercase tracking-widest text-center mt-2">Arahkan ke bagian tengah produk (Warna & Bentuk)<br>Tidak perlu tekan tombol</p>
+    <footer class="p-6 pb-10 flex flex-col items-center justify-center bg-black/50 backdrop-blur-md border-t border-white/10">
+        <button onclick="manualScanProcess()" id="btnManualScan" class="w-full max-w-[200px] py-4 bg-primary text-slate-900 font-black rounded-2xl shadow-xl uppercase tracking-widest hover:bg-[#0fdc40] active:scale-95 transition-all mb-3 flex items-center justify-center gap-2">
+            <span class="material-icons-round">camera</span> SCAN
+        </button>
+        <p class="text-white/60 text-[10px] font-bold uppercase tracking-widest text-center">Arahkan ke bagian tengah produk<br>Lalu tekan tombol SCAN</p>
     </footer>
 </div>
 
@@ -726,23 +725,24 @@
     function loadProf() { document.getElementById('dispShopName').innerText = profile.name; document.getElementById('dispShopAddr').innerText = profile.address; document.getElementById('sShopName').innerText = profile.name; document.getElementById('editName').value = profile.name; document.getElementById('editAddr').value = profile.address; if(profile.logo) { document.getElementById('headerLogo').innerHTML = `<img src="${profile.logo}" class="w-full h-full object-cover">`; } else { document.getElementById('headerLogo').innerHTML = `<span class="material-icons-round text-primary text-xl">storefront</span>`; } const gStatus = document.getElementById('googleStatus'); if(profile.googleEmail) { gStatus.innerText = "Terhubung: " + profile.googleEmail; gStatus.className = "text-[10px] font-bold text-green-500 uppercase"; } else { gStatus.innerText = "Belum terhubung"; gStatus.className = "text-[10px] font-bold text-slate-400 uppercase"; } }
     function handleLogoUpload(e) { const fr = new FileReader(); fr.onload = (ev) => { profile.logo = ev.target.result; saveProf(); }; fr.readAsDataURL(e.target.files[0]); }
 
-    // --- MODUL SCANNER 1: FOTO PRODUK AI ---
+    // --- MODUL SCANNER 1: FOTO PRODUK AI (MANUAL SCAN) ---
     let cameraStream = null;
     let flashFotoOn = false;
-    let scanInterval = null;
-    let isScanningPaused = false;
 
     async function openScanner() {
         document.getElementById('modalScanner').classList.remove('hidden');
         const video = document.getElementById('cameraFeed');
         flashFotoOn = false;
         document.getElementById('iconFlashFoto').innerText = 'flash_off';
-        isScanningPaused = false;
+        
+        // Reset tombol
+        const btn = document.getElementById('btnManualScan');
+        btn.disabled = false;
+        btn.innerHTML = '<span class="material-icons-round">camera</span> SCAN';
+        
         try {
             cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             video.srcObject = cameraStream;
-            // Interval scan dinaikkan agar pemrosesan lebih stabil (tanpa pencet tombol)
-            scanInterval = setInterval(autoScanProcess, 600);
         } catch (err) {
             alert("Tidak dapat mengakses kamera.");
             closeScanner();
@@ -752,7 +752,6 @@
     function closeScanner() {
         document.getElementById('modalScanner').classList.add('hidden');
         if(cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
-        if(scanInterval) { clearInterval(scanInterval); scanInterval = null; }
     }
 
     async function toggleFlashFoto() {
@@ -782,9 +781,19 @@
         return Math.sqrt(Math.pow(c1.r - c2.r, 2) + Math.pow(c1.g - c2.g, 2) + Math.pow(c1.b - c2.b, 2));
     }
 
-    function showScanToast(text) {
+    function showScanToast(text, isError = false) {
         const toast = document.getElementById('scanToast');
         document.getElementById('scanToastText').innerText = text;
+        
+        const icon = toast.querySelector('.material-icons-round');
+        if(isError) {
+            toast.classList.replace('bg-green-500', 'bg-red-500');
+            icon.innerText = 'error';
+        } else {
+            toast.classList.replace('bg-red-500', 'bg-green-500');
+            icon.innerText = 'check_circle';
+        }
+
         toast.classList.remove('scale-0');
         toast.classList.add('scale-100');
         setTimeout(() => {
@@ -793,10 +802,14 @@
         }, 2000);
     }
 
-    async function autoScanProcess() {
-        if(isScanningPaused) return;
+    async function manualScanProcess() {
         const video = document.getElementById('cameraFeed');
         if(!video.videoWidth) return;
+        
+        // Ubah state tombol saat loading
+        const btn = document.getElementById('btnManualScan');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-icons-round animate-spin">sync</span> MEMPROSES...';
 
         const currentFeatures = await extractFeatures(video);
         let bestMatch = null;
@@ -807,12 +820,12 @@
             
             const hashDiff = getHammingDistance(currentFeatures.hash, p.hash);
             
-            // JANGAN paksakan jika tidak ada warna tersimpan (produk lama)
+            // JANGAN paksakan jika tidak memenuhi toleransi yg KETAT
             if(p.color) {
                 const colorDiff = getColorDistance(currentFeatures.color, p.color);
                 
-                // Syarat Ketat: Struktur gambar harus mirip (<12 beda) DAN Warnanya sangat mirip (<50 poin)
-                if(hashDiff <= 12 && colorDiff <= 55) {
+                // Syarat Sangat Ketat: Bentuk max selisih 10, Warna max selisih 45
+                if(hashDiff <= 10 && colorDiff <= 45) {
                     let combinedScore = hashDiff + (colorDiff / 10);
                     if(combinedScore < lowestScore) {
                         lowestScore = combinedScore;
@@ -820,8 +833,8 @@
                     }
                 }
             } else {
-                // Fallback untuk produk lama yang tidak punya warna (Akurasi lebih rendah)
-                if(hashDiff <= 10 && hashDiff < lowestScore) {
+                // Fallback sangat ketat untuk produk tanpa warna
+                if(hashDiff <= 8 && hashDiff < lowestScore) {
                     lowestScore = hashDiff;
                     bestMatch = p;
                 }
@@ -829,11 +842,17 @@
         }
 
         if(bestMatch) {
-            isScanningPaused = true;
             updateQty(bestMatch.name, 1);
-            showScanToast(bestMatch.name);
-            setTimeout(() => { isScanningPaused = false; }, 2500); // Jeda agar tidak scan produk yang sama berkali-kali
+            showScanToast(bestMatch.name + " Ditemukan!");
+        } else {
+            showScanToast("Tidak Dikenali / Tidak Mirip", true);
         }
+        
+        // Kembalikan tombol ke keadaan semula setelah jeda 1 detik
+        setTimeout(() => {
+            btn.disabled = false;
+            btn.innerHTML = '<span class="material-icons-round">camera</span> SCAN';
+        }, 1000);
     }
 
     // --- MODUL SCANNER 2: BARCODE & QR CODE ---
