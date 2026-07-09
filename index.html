@@ -20,7 +20,7 @@
        })();
     </script>
     
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght=400;600;700;800&family=Courier+Prime&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Courier+Prime&display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"/>
     
     <script>
@@ -44,10 +44,8 @@
         .section-card { @apply bg-white dark:bg-slate-900 rounded-2xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 mb-4; }
         .pay-card { background-color: #4b5563 !important; color: #ffffff !important; padding: 14px 10px; border-radius: 12px; text-align: center; cursor: pointer; font-weight: 800; font-size: 11px; min-width: 85px; margin: 4px; flex: 1; }
         .pay-card.active { background-color: #13ec49 !important; color: #102215 !important; border: 2px solid #102215; }
-        
-        /* Kustomisasi Frame Scanner Kamera HTML5-QRCode */
-        #barcodeReader { width: 100% !important; border: none !important; display: flex !important; flex-direction: column !important; align-items: center !important; justify-content: center !important; }
-        #barcodeReader video { max-width: 85% !important; height: auto !important; border-radius: 24px !important; border: 4px solid #13ec49 !important; box-shadow: 0 0 25px rgba(19, 236, 73, 0.4); margin: 0 auto !important; object-fit: cover !important; }
+        .scan-line { width: 100%; height: 2px; background: #13ec49; position: absolute; top: 0; left: 0; animation: scan 2s infinite linear; box-shadow: 0 0 10px #13ec49; }
+        @keyframes scan { 0% { top: 0; } 50% { top: 100%; } 100% { top: 0; } }
     </style>
 </head>
 <body class="bg-[#f6f8f6] dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen">
@@ -103,12 +101,12 @@
                 <div class="flex justify-between items-center mb-2 px-2">
                     <label for="inputCariKasir" class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Pencarian / Scan Kasir</label>
                     <div class="flex gap-1.5">
-                        <button onclick="openBarcodeScanner('kasir', 'QR')" class="flex items-center gap-1 bg-slate-800 text-white px-2 py-1 rounded-lg hover:bg-slate-900 active:scale-95 transition-all">
-                            <span class="material-icons-round text-xs text-primary">qr_code_2</span>
-                            <span class="text-[9px] font-bold uppercase">QR</span>
+                        <button onclick="openScanner()" class="flex items-center gap-1 bg-slate-800 text-white px-2 py-1 rounded-lg hover:bg-slate-900 active:scale-95 transition-all">
+                            <span class="material-icons-round text-xs text-primary">photo_camera</span>
+                            <span class="text-[9px] font-bold uppercase">Foto</span>
                         </button>
-                        <button onclick="openBarcodeScanner('kasir', 'BARCODE')" class="flex items-center gap-1 bg-slate-800 text-white px-2 py-1 rounded-lg hover:bg-slate-900 active:scale-95 transition-all">
-                            <span class="material-icons-round text-xs text-primary">view_barcode</span>
+                        <button onclick="openBarcodeScanner('kasir')" class="flex items-center gap-1 bg-slate-800 text-white px-2 py-1 rounded-lg hover:bg-slate-900 active:scale-95 transition-all">
+                            <span class="material-icons-round text-xs text-primary">qr_code_scanner</span>
                             <span class="text-[9px] font-bold uppercase">Barcode</span>
                         </button>
                     </div>
@@ -140,10 +138,16 @@
             </div>
             
             <div class="mb-3 px-1">
-                <label for="inputCariRiwayat" class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 block px-2">Filter Data Riwayat</label>
+                <div class="flex justify-between items-center mb-2 px-2">
+                    <label for="inputCariRiwayat" class="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Filter Data Riwayat</label>
+                    <button onclick="openBarcodeScanner('riwayat')" class="flex items-center gap-1 bg-slate-800 text-white px-2 py-1 rounded-lg hover:bg-slate-900 active:scale-95 transition-all">
+                        <span class="material-icons-round text-xs text-primary">qr_code_scanner</span>
+                        <span class="text-[9px] font-bold uppercase">Scan Struk</span>
+                    </button>
+                </div>
                 <div class="relative">
                     <span class="material-icons-round absolute left-4 top-4 text-slate-400 text-sm">search</span>
-                    <input type="text" id="inputCariRiwayat" oninput="renderTrx()" placeholder="Cari ID Transaksi..." class="w-full rounded-xl border-none bg-white dark:bg-slate-800 text-xs shadow-sm p-4 pl-10 font-bold">
+                    <input type="text" id="inputCariRiwayat" oninput="renderTrx()" placeholder="Cari ID Transaksi atau nama barang..." class="w-full rounded-xl border-none bg-white dark:bg-slate-800 text-xs shadow-sm p-4 pl-10 font-bold">
                 </div>
             </div>
             <div id="listRiwayat" class="space-y-3"></div>
@@ -163,16 +167,9 @@
                 <input type="number" id="pPrice" placeholder="Harga Jual" class="w-full rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal">
                 
                 <div class="flex gap-2">
-                    <input type="text" id="pBarcode" placeholder="Kode Batang (Opsional)" class="flex-1 rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal uppercase">
-                    <button onclick="openBarcodeScanner('produk_barcode', 'BARCODE')" class="px-3 bg-slate-800 text-white rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1 hover:bg-slate-900 active:scale-95 transition-transform w-24">
-                        <span class="material-icons-round text-xs text-primary">view_barcode</span> Barcode
-                    </button>
-                </div>
-
-                <div class="flex gap-2">
-                    <input type="text" id="pQR" placeholder="Kode QR (Opsional)" class="flex-1 rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal uppercase">
-                    <button onclick="openBarcodeScanner('produk_qr', 'QR')" class="px-3 bg-slate-800 text-white rounded-xl text-[10px] font-bold uppercase flex items-center justify-center gap-1 hover:bg-slate-900 active:scale-95 transition-transform w-24">
-                        <span class="material-icons-round text-xs text-primary">qr_code_2</span> QR
+                    <input type="text" id="pBarcode" placeholder="Kode Batang / QR (Opsional)" class="flex-1 rounded-xl border-none bg-slate-50 dark:bg-slate-800 text-sm font-bold placeholder:font-normal uppercase">
+                    <button onclick="openBarcodeScanner('produk')" class="px-3 bg-slate-800 text-white rounded-xl text-xs font-bold uppercase flex items-center justify-center gap-1 hover:bg-slate-900 active:scale-95 transition-transform">
+                        <span class="material-icons-round text-xs text-primary">qr_code_scanner</span> Scan
                     </button>
                 </div>
 
@@ -191,8 +188,9 @@
                     
                     <img id="pPhotoPreview" class="hidden w-12 h-12 rounded-lg object-cover border dark:border-slate-700 shadow-sm shrink-0 ml-1">
                 </div>
+                <p class="text-[8px] text-slate-400 font-bold uppercase leading-tight -mt-1 mb-2 px-1 text-center">*WAJIB FOTO BAGIAN TENGAH PRODUK UNTUK AKURASI SCAN OTOMATIS*</p>
 
-                <button onclick="addProd()" class="w-full py-3 bg-primary text-slate-900 font-black rounded-xl text-xs uppercase shadow-md hover:shadow-lg transition-all active:scale-95 mt-2">Simpan Barang</button>
+                <button onclick="addProd()" class="w-full py-3 bg-primary text-slate-900 font-black rounded-xl text-xs uppercase shadow-md hover:shadow-lg transition-all active:scale-95">Simpan Barang</button>
             </div>
             
             <div class="section-card !p-3">
@@ -261,11 +259,42 @@
     </nav>
 </div>
 
-<!-- Modal Scanner Universal -->
+<div id="modalScanner" class="fixed inset-0 bg-black/95 z-[120] hidden flex flex-col">
+    <div id="scanToast" class="absolute top-24 left-1/2 -translate-x-1/2 bg-green-500 text-white px-6 py-3 rounded-full font-black text-xs uppercase tracking-widest shadow-xl scale-0 transition-transform duration-300 z-[150] flex items-center gap-2">
+        <span class="material-icons-round text-sm">check_circle</span>
+        <span id="scanToastText">Ditambahkan</span>
+    </div>
+
+    <header class="p-4 flex items-center justify-between text-white border-b border-white/10 z-[130]">
+        <h2 class="font-black text-sm uppercase flex items-center gap-2">
+            <span class="material-icons-round text-primary">view_in_ar</span> Scanner Foto
+        </h2>
+        <div class="flex items-center gap-2">
+            <button id="btnFlashFoto" onclick="toggleFlashFoto()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 text-white flex items-center justify-center">
+                <span id="iconFlashFoto" class="material-icons-round text-lg">flash_off</span>
+            </button>
+            <button onclick="closeScanner()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20"><span class="material-icons-round">close</span></button>
+        </div>
+    </header>
+    <main class="flex-1 relative flex items-center justify-center overflow-hidden">
+        <video id="cameraFeed" autoplay playsinline class="absolute inset-0 w-full h-full object-cover"></video>
+        <div class="absolute w-64 h-64 border-4 border-primary/50 rounded-3xl overflow-hidden shadow-[0_0_0_100vw_rgba(0,0,0,0.6)]">
+            <div class="scan-line"></div>
+        </div>
+    </main>
+    <footer class="p-8 pb-12 flex flex-col items-center justify-center bg-black/50 backdrop-blur-md border-t border-white/10">
+        <div class="flex items-center gap-2 text-primary animate-pulse mb-1">
+            <span class="material-icons-round text-2xl">radar</span>
+            <span class="font-black text-sm uppercase tracking-widest">Memindai Otomatis...</span>
+        </div>
+        <p class="text-white/60 text-[10px] font-bold uppercase tracking-widest text-center mt-2">Pastikan produk pas di dalam kotak<br>Tidak perlu tekan tombol</p>
+    </footer>
+</div>
+
 <div id="modalBarcodeScanner" class="fixed inset-0 bg-black/95 z-[120] hidden flex flex-col">
     <header class="p-4 flex items-center justify-between text-white border-b border-white/10 z-[130]">
-        <h2 id="scannerTitle" class="font-black text-sm uppercase flex items-center gap-2">
-            <span class="material-icons-round text-primary">qr_code_scanner</span> Scanner
+        <h2 class="font-black text-sm uppercase flex items-center gap-2">
+            <span class="material-icons-round text-primary">qr_code_scanner</span> Scan Barcode / QR
         </h2>
         <div class="flex items-center gap-2">
             <button id="btnFlashBarcode" onclick="toggleFlashBarcode()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20 text-white flex items-center justify-center">
@@ -274,8 +303,8 @@
             <button onclick="closeBarcodeScanner()" class="p-2 bg-white/10 rounded-lg hover:bg-white/20"><span class="material-icons-round">close</span></button>
         </div>
     </header>
-    <main class="flex-1 bg-black relative flex items-center justify-center p-4">
-        <div id="barcodeReader"></div>
+    <main class="flex-1 bg-black relative flex items-center justify-center">
+        <div id="barcodeReader" class="w-full h-full"></div>
     </main>
 </div>
 
@@ -292,7 +321,7 @@
                 <select id="payMethod" onchange="handlePayMethodChange()" class="w-full rounded-2xl border-none bg-slate-100 dark:bg-slate-800 font-bold py-4 pl-4 pr-10 appearance-none focus:ring-primary">
                     <option value="TUNAI">💵 TUNAI / CASH</option>
                     <option value="QRIS">📱 QRIS / E-WALLET</option>
-                    <option value="TRANSFER">💳 TRANSFER BANK</option>
+                    <option value="TRANSFER">🏦 TRANSFER BANK</option>
                 </select>
                 <span class="material-icons-round absolute right-4 top-4 pointer-events-none">expand_more</span>
             </div>
@@ -336,7 +365,13 @@
                 <div class="flex justify-between font-bold mt-1"><span>BAYAR</span><span id="sDispCash"></span></div>
                 <div class="flex justify-between font-bold"><span>KEMBALI</span><span id="sDispChange"></span></div>
             </div>
-            <div class="mt-6 pt-3 border-t border-dashed border-black text-center">
+            
+            <div class="flex flex-col items-center justify-center my-4 pt-3 border-t border-dashed border-black">
+                <img id="sTrxBarcodeImage" src="" class="w-28 h-28 mb-1 hidden" alt="QR Transaksi">
+                <span id="sTrxBarcodeText" class="font-mono text-[11px] tracking-widest font-bold"></span>
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-dashed border-black text-center">
                 <p class="text-xs font-bold uppercase tracking-widest opacity-80">Terima Kasih</p>
                 <p class="text-[10px] uppercase opacity-60 mt-1">Simpan struk sebagai bukti sah</p>
             </div>
@@ -367,6 +402,7 @@
     let activeLabelKatalog = 'ALL';
     
     let tempPhotoData = '';
+    let tempPhotoHash = '';
 
     function handleCredentialResponse(response) {
         const responsePayload = parseJwt(response.credential);
@@ -399,6 +435,7 @@
     }
     function toggleDarkMode() { document.documentElement.classList.toggle('dark'); }
 
+    // --- FILTER LABELS ---
     function renderLabels() {
         let rawLabels = products.map(p => p.label && p.label.trim() !== '' ? p.label : 'LAINNYA');
         const uniqueLabels = ['ALL', ...new Set(rawLabels)];
@@ -412,16 +449,12 @@
     function setLabelKasir(l) { activeLabelKasir = l; renderLabels(); renderProds(); }
     function setLabelKatalog(l) { activeLabelKatalog = l; renderLabels(); renderKatalog(); }
 
+    // --- KASIR ---
     function renderProds() {
         const query = document.getElementById('inputCariKasir').value.toLowerCase();
         const grid = document.getElementById('gridProduk'); grid.innerHTML = '';
         
-        let filtered = products.filter(p => 
-            p.name.toLowerCase().includes(query) || 
-            (p.barcode && p.barcode.toLowerCase().includes(query)) ||
-            (p.qr && p.qr.toLowerCase().includes(query))
-        );
-        
+        let filtered = products.filter(p => p.name.toLowerCase().includes(query) || (p.barcode && p.barcode.toLowerCase().includes(query)));
         if(activeLabelKasir !== 'ALL') {
             filtered = filtered.filter(p => (p.label && p.label.trim() !== '' ? p.label : 'LAINNYA') === activeLabelKasir);
         }
@@ -448,7 +481,6 @@
             </div>`;
         });
     }
-    
     function updateQty(name, delta) { cart[name] = (cart[name] || 0) + delta; if(cart[name] <= 0) delete cart[name]; updateCartFooter(); renderProds(); }
     function updateCartFooter() {
         let tQty = 0, tPrice = 0;
@@ -457,14 +489,13 @@
         if(tQty > 0) { c.classList.remove('hidden'); document.getElementById('footerQty').innerText = tQty + " ITEM"; document.getElementById('footerTotal').innerText = "Rp " + tPrice.toLocaleString(); document.getElementById('finalTotalDisplay').innerText = "Rp " + tPrice.toLocaleString(); } else { c.classList.add('hidden'); }
     }
 
+    // --- CHECKOUT ---
     function openCheckoutPage() { document.getElementById('pageCheckout').classList.remove('hidden'); renderCheckoutItems(); handlePayMethodChange(); }
     function closeCheckoutPage() { document.getElementById('pageCheckout').classList.add('hidden'); }
-    
     function renderCheckoutItems() {
         const list = document.getElementById('checkoutItems'); list.innerHTML = '';
         Object.keys(cart).forEach(n => { const p = products.find(x => x.name === n); if(p) list.innerHTML += `<div class="flex justify-between bg-slate-50 dark:bg-slate-800 p-4 rounded-xl border dark:border-slate-700 font-bold text-xs uppercase items-center"><div><span class="block text-[10px] opacity-70 mb-1">${n}</span><span class="text-sm">x${cart[n]}</span></div><span class="text-sm">Rp ${(p.price*cart[n]).toLocaleString()}</span></div>`; });
     }
-    
     function handlePayMethodChange() {
         const method = document.getElementById('payMethod').value;
         const inputCash = document.getElementById('cashAmount');
@@ -473,7 +504,6 @@
         else { inputCash.value = ''; inputCash.readOnly = false; inputCash.classList.remove('opacity-50', 'bg-slate-200'); document.getElementById('nominalContainer').classList.remove('hidden'); document.getElementById('changeBox').classList.remove('hidden'); generateNominalCards(total); }
         calcChange();
     }
-    
     function generateNominalCards(total) {
         const container = document.getElementById('nominalTemplates'); container.innerHTML = '';
         let opts = [total, 5000, 10000, 20000, 50000, 100000].filter(v => v >= total); if(!opts.includes(total)) opts.push(total);
@@ -484,7 +514,6 @@
             container.appendChild(card);
         });
     }
-    
     function calcChange() {
         let total = 0; Object.keys(cart).forEach(n => { const p = products.find(x => x.name === n); if(p) total += (p.price * cart[n]); });
         const cash = Number(document.getElementById('cashAmount').value) || 0;
@@ -492,7 +521,6 @@
         document.getElementById('changeText').innerText = "Rp " + (change >= 0 ? change.toLocaleString() : "0");
         document.getElementById('changeText').className = change < 0 ? "text-xl font-black text-red-500 uppercase" : "text-xl font-black text-primary uppercase";
     }
-    
     function setUangPas() { let total = 0; Object.keys(cart).forEach(n => { const p = products.find(x => x.name === n); if(p) total += (p.price * cart[n]); }); document.getElementById('cashAmount').value = total; calcChange(); document.querySelectorAll('.pay-card').forEach(c => c.classList.remove('active')); }
     
     function finishTrx() {
@@ -508,6 +536,84 @@
         closeCheckoutPage(); showStruk(trx); cart = {}; updateCartFooter(); renderProds(); renderTrx(); calcStats();
     }
 
+    // --- PERBAIKAN: CODES UNTUK LOGIK RIWAYAT (TAB LAPORAN) ---
+    function renderTrx() {
+        const query = document.getElementById('inputCariRiwayat').value.toLowerCase();
+        const list = document.getElementById('listRiwayat');
+        if(!list) return;
+        list.innerHTML = '';
+        
+        let filtered = transactions.filter(t => 
+            t.id.toLowerCase().includes(query) || 
+            t.items.some(item => item.name.toLowerCase().includes(query))
+        );
+        
+        if (filtered.length === 0) {
+            list.innerHTML = `<div class="text-center p-10 opacity-50"><span class="material-icons-round text-4xl mb-2">history_toggle_off</span><p class="text-xs font-bold">Riwayat tidak ditemukan</p></div>`;
+            return;
+        }
+        
+        filtered.forEach(t => {
+            let itemsSummary = t.items.map(it => `${it.name} (x${it.qty})`).join(', ');
+            list.innerHTML += `<div class="section-card !p-4 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm flex flex-col gap-2">
+                <div class="flex justify-between items-center border-b dark:border-slate-800 pb-2">
+                    <div>
+                        <span class="text-xs font-black text-primary font-mono">${t.id}</span>
+                        <p class="text-[10px] text-slate-400 font-bold">${t.date} ${t.time}</p>
+                    </div>
+                    <span class="text-[10px] font-black px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded text-slate-600 dark:text-slate-300 font-mono">${t.pay}</span>
+                </div>
+                <div class="text-xs font-medium text-slate-500 dark:text-slate-400 truncate">${itemsSummary}</div>
+                <div class="flex justify-between items-center pt-2 border-t dark:border-slate-800 mt-1">
+                    <div>
+                        <p class="text-[9px] text-slate-400 font-bold uppercase">Total Tagihan</p>
+                        <p class="text-sm font-black text-slate-800 dark:text-white">Rp ${t.total.toLocaleString()}</p>
+                    </div>
+                    <button onclick="showStrukFromHistory('${t.id}')" class="flex items-center gap-1 bg-primary text-slate-900 px-3 py-1.5 rounded-xl font-black text-[10px] uppercase shadow-sm active:scale-95 transition-transform">
+                        <span class="material-icons-round text-xs">receipt</span> Struk
+                    </button>
+                </div>
+            </div>`;
+        });
+    }
+
+    function showStrukFromHistory(id) {
+        const trx = transactions.find(t => t.id === id);
+        if (trx) showStruk(trx);
+    }
+
+    function clearAllTrx() {
+        if(confirm('Yakin ingin menghapus seluruh riwayat transaksi secara permanen?')) {
+            transactions = [];
+            localStorage.setItem('pos_t', JSON.stringify(transactions));
+            renderTrx();
+            calcStats();
+            alert('Semua data riwayat berhasil dibersihkan!');
+        }
+    }
+
+    function downloadReport() {
+        if (transactions.length === 0) { alert('Tidak ada data transaksi untuk diunduh.'); return; }
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        doc.text("LAPORAN TRANSAKSI - " + profile.name, 14, 15);
+        doc.text("Alamat: " + profile.address, 14, 22);
+        
+        const tableData = [];
+        transactions.forEach(t => {
+            const itemsStr = t.items.map(it => `${it.name} (x${it.qty})`).join(', ');
+            tableData.push([t.id, `${t.date} ${t.time}`, itemsStr, t.pay, "Rp " + t.total.toLocaleString()]);
+        });
+        
+        doc.autoTable({
+            startY: 28,
+            head: [['ID Transaksi', 'Waktu', 'Barang', 'Metode', 'Total']],
+            body: tableData,
+        });
+        doc.save(`Laporan_Transaksi_${new Date().toISOString().slice(0,10)}.pdf`);
+    }
+
+    // --- STRUK & EMAIL ---
     function showStruk(t) {
         currentTrx = t; 
         document.getElementById('sShopName').innerText = profile.name; document.getElementById('sShopAddr').innerText = profile.address;
@@ -516,6 +622,14 @@
         t.items.forEach(it => { list.innerHTML += `<div class="flex justify-between items-start"><span class="w-1/2">${it.name} <br/><span class="opacity-70">x${it.qty}</span></span><span class="w-1/2 text-right">${(it.price*it.qty).toLocaleString()}</span></div>`; });
         document.getElementById('sDispTotal').innerText = "Rp " + t.total.toLocaleString(); document.getElementById('sDispPay').innerText = t.pay; document.getElementById('sDispCash').innerText = "Rp " + t.cash.toLocaleString(); document.getElementById('sDispChange').innerText = "Rp " + (t.cash - t.total).toLocaleString();
         
+        // FITUR BARU: Generate QR Code instan berbasis API dari ID Transaksi
+        const qrImg = document.getElementById('sTrxBarcodeImage');
+        if(qrImg) {
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${t.id}`;
+            qrImg.classList.remove('hidden');
+        }
+        document.getElementById('sTrxBarcodeText').innerText = t.id;
+
         document.getElementById('customerEmail').value = '';
         document.getElementById('btnKirimEmail').innerHTML = '<span class="material-icons-round text-sm">email</span> Kirim E-Receipt';
         document.getElementById('btnKirimEmail').disabled = false;
@@ -571,6 +685,7 @@
         try { const canvas = await html2canvas(document.getElementById('areaStruk'), {scale: 2}); canvas.toBlob(blob => { const file = new File([blob], "struk.png", {type: "image/png"}); if (navigator.share) navigator.share({files: [file]}); }); } catch(e) { console.error(e); }
     }
 
+    // --- ALGORITMA BARU: dHash (Difference Hash) & Perfect Center Crop ---
     function resizeImageForStorage(file, maxSize) {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -591,24 +706,64 @@
         });
     }
 
+    function generatePerceptualHash(source) {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 9;  // dHash membutuhkan lebar +1 untuk membandingkan piksel sebelahnya
+            canvas.height = 8;
+            const ctx = canvas.getContext('2d');
+            
+            // Dapatkan dimensi asli
+            let sWidth = source instanceof HTMLVideoElement ? source.videoWidth : source.width;
+            let sHeight = source instanceof HTMLVideoElement ? source.videoHeight : source.height;
+            
+            // WAJIB: Center Crop Geometris Simetris. Biar perhitungan matematika gambar asli & kamera SAMA PERSIS.
+            const size = Math.min(sWidth, sHeight);
+            const sx = (sWidth - size) / 2;
+            const sy = (sHeight - size) / 2;
+            
+            // Gambar crop bagian tengah tepat ke canvas 9x8
+            ctx.drawImage(source, sx, sy, size, size, 0, 0, 9, 8);
+            
+            const imgData = ctx.getImageData(0,0,9,8).data;
+            let grayscales = [];
+            for(let i=0; i<imgData.length; i+=4) {
+                grayscales.push(imgData[i]*0.3 + imgData[i+1]*0.59 + imgData[i+2]*0.11);
+            }
+            
+            let hash = '';
+            for(let y=0; y<8; y++) {
+                for(let x=0; x<8; x++) {
+                    const left = grayscales[y * 9 + x];
+                    const right = grayscales[y * 9 + x + 1];
+                    // Jika piksel kiri lebih terang dari kanan, beri nilai 1, sebaliknya 0.
+                    // Ini membunuh masalah "pencahayaan/brightness" kamera.
+                    hash += left > right ? '1' : '0';
+                }
+            }
+            resolve(hash);
+        });
+    }
+
     async function handlePhotoUpload(e) {
         const file = e.target.files[0];
         if(!file) return;
         tempPhotoData = await resizeImageForStorage(file, 150); 
         document.getElementById('pPhotoPreview').src = tempPhotoData;
         document.getElementById('pPhotoPreview').classList.remove('hidden');
+        
+        const img = new Image();
+        img.onload = async () => { 
+            tempPhotoHash = await generatePerceptualHash(img); 
+        };
+        img.src = tempPhotoData; // Hash dibuat SETELAH gambar selesai dimuat dengan ukuran baru
     }
 
     function renderKatalog() {
         const query = document.getElementById('inputCariKatalog').value.toLowerCase();
         const list = document.getElementById('listProduk'); list.innerHTML = '';
         
-        let filtered = products.filter(p => 
-            p.name.toLowerCase().includes(query) || 
-            (p.barcode && p.barcode.toLowerCase().includes(query)) ||
-            (p.qr && p.qr.toLowerCase().includes(query))
-        );
-        
+        let filtered = products.filter(p => p.name.toLowerCase().includes(query) || (p.barcode && p.barcode.toLowerCase().includes(query)));
         if(activeLabelKatalog !== 'ALL') {
             filtered = filtered.filter(p => (p.label && p.label.trim() !== '' ? p.label : 'LAINNYA') === activeLabelKatalog);
         }
@@ -616,10 +771,7 @@
         filtered.forEach((p) => {
             const realIndex = products.indexOf(p);
             const imgHtml = p.image ? `<img src="${p.image}" class="w-8 h-8 object-cover rounded shadow-sm mr-2">` : `<div class="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center mr-2"><span class="material-icons-round text-xs text-slate-300">image</span></div>`;
-            
-            // Format Tulisan Barcode / QR agar Rapi dalam bentuk Badge Kotak Info
-            const barcodeLabel = p.barcode ? `<div class="mt-1 flex"><span class="inline-flex items-center gap-1 text-[9px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded border dark:border-slate-700"><span class="material-icons-round text-[10px] text-primary">view_barcode</span>${p.barcode}</span></div>` : '';
-            const qrLabel = p.qr ? `<div class="mt-1 flex"><span class="inline-flex items-center gap-1 text-[9px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-0.5 rounded border dark:border-slate-700"><span class="material-icons-round text-[10px] text-primary">qr_code_2</span>${p.qr}</span></div>` : '';
+            const barcodeLabel = p.barcode ? `<span class="text-[9px] text-slate-400 font-mono block">BARCODE: ${p.barcode}</span>` : '';
             
             list.innerHTML += `<div class="p-3 bg-white dark:bg-slate-900 rounded-xl flex justify-between items-center border border-slate-50 dark:border-slate-800 group hover:border-primary/50 transition-colors">
                 <div class="flex items-center">
@@ -628,7 +780,6 @@
                         <span class="text-[8px] font-black text-slate-400 uppercase leading-tight">${p.label || 'LAINNYA'}</span>
                         <span class="text-xs font-bold uppercase text-slate-700 dark:text-slate-200">${p.name} <span class="text-primary ml-1">Rp ${p.price.toLocaleString()}</span></span>
                         ${barcodeLabel}
-                        ${qrLabel}
                     </div>
                 </div>
                 <button onclick="delProd(${realIndex})" class="text-slate-300 hover:text-red-500 transition-colors p-2"><span class="material-icons-round text-sm">delete</span></button>
@@ -641,20 +792,18 @@
         const n = document.getElementById('pName').value.toUpperCase(); 
         const p = document.getElementById('pPrice').value; 
         const b = document.getElementById('pBarcode').value.trim().toUpperCase(); 
-        const q = document.getElementById('pQR').value.trim().toUpperCase(); 
         const l = document.getElementById('pLabel').value.toUpperCase() || 'LAINNYA';
         
         if(n && p) { 
-            products.push({name: n, price: Number(p), label: l, image: tempPhotoData, barcode: b, qr: q}); 
+            products.push({name: n, price: Number(p), label: l, image: tempPhotoData, hash: tempPhotoHash, barcode: b}); 
             
-            tempPhotoData = ''; 
+            tempPhotoData = ''; tempPhotoHash = '';
             document.getElementById('pName').value=''; 
             document.getElementById('pPrice').value=''; 
             document.getElementById('pBarcode').value=''; 
-            document.getElementById('pQR').value=''; 
             document.getElementById('pLabel').value='';
             document.getElementById('pPhoto').value='';
-            document.getElementById('pCamera').value=''; 
+            document.getElementById('pCamera').value=''; // Bersihkan input kamera juga
             document.getElementById('pPhotoPreview').classList.add('hidden');
             document.getElementById('pPhotoPreview').src = '';
             
@@ -666,52 +815,125 @@
     function delProd(index) { if(confirm('Hapus barang ini dari katalog?')) { products.splice(index, 1); renderLabels(); renderKatalog(); renderProds(); } }
     function importData(e) { const reader = new FileReader(); reader.onload = (ev) => { try { const imported = JSON.parse(ev.target.result); if(Array.isArray(imported)) { products = imported; localStorage.setItem('pos_p', JSON.stringify(products)); renderLabels(); renderKatalog(); renderProds(); alert('Sukses impor!'); } } catch (err) { alert('Gagal!'); } }; reader.readAsText(e.target.files[0]); }
 
+    // --- PROFIL ---
     function calcStats() { const today = new Date().toLocaleDateString('id-ID'); const filt = transactions.filter(t => t.fullDate === today); document.getElementById('countToday').innerText = filt.length; document.getElementById('totalToday').innerText = 'Rp ' + filt.reduce((a,b)=>a+b.total,0).toLocaleString(); }
     function saveProf() { profile.name = document.getElementById('editName').value; profile.address = document.getElementById('editAddr').value; localStorage.setItem('pos_prof', JSON.stringify(profile)); loadProf(); }
     function loadProf() { document.getElementById('dispShopName').innerText = profile.name; document.getElementById('dispShopAddr').innerText = profile.address; document.getElementById('sShopName').innerText = profile.name; document.getElementById('editName').value = profile.name; document.getElementById('editAddr').value = profile.address; if(profile.logo) { document.getElementById('headerLogo').innerHTML = `<img src="${profile.logo}" class="w-full h-full object-cover">`; } else { document.getElementById('headerLogo').innerHTML = `<span class="material-icons-round text-primary text-xl">storefront</span>`; } const gStatus = document.getElementById('googleStatus'); if(profile.googleEmail) { gStatus.innerText = "Terhubung: " + profile.googleEmail; gStatus.className = "text-[10px] font-bold text-green-500 uppercase"; } else { gStatus.innerText = "Belum terhubung"; gStatus.className = "text-[10px] font-bold text-slate-400 uppercase"; } }
     function handleLogoUpload(e) { const fr = new FileReader(); fr.onload = (ev) => { profile.logo = ev.target.result; saveProf(); }; fr.readAsDataURL(e.target.files[0]); }
 
-    // --- MODUL SCANNER BARCODE & QR CODE TERINTEGRASI ---
+    // --- MODUL SCANNER 1: FOTO PRODUK (OTOMATIS) ---
+    let cameraStream = null;
+    let flashFotoOn = false;
+    let scanInterval = null;
+    let isScanningPaused = false;
+
+    async function openScanner() {
+        document.getElementById('modalScanner').classList.remove('hidden');
+        const video = document.getElementById('cameraFeed');
+        flashFotoOn = false;
+        document.getElementById('iconFlashFoto').innerText = 'flash_off';
+        isScanningPaused = false;
+        try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+            video.srcObject = cameraStream;
+            // Jalankan scanning secara otomatis setiap 800 milidetik
+            scanInterval = setInterval(autoScanProcess, 800);
+        } catch (err) {
+            alert("Tidak dapat mengakses kamera.");
+            closeScanner();
+        }
+    }
+
+    function closeScanner() {
+        document.getElementById('modalScanner').classList.add('hidden');
+        if(cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+        if(scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+    }
+
+    async function toggleFlashFoto() {
+        if(!cameraStream) return;
+        const track = cameraStream.getVideoTracks()[0];
+        try {
+            const caps = track.getCapabilities();
+            if('torch' in caps) {
+                flashFotoOn = !flashFotoOn;
+                await track.applyConstraints({ advanced: [{ torch: flashFotoOn }] });
+                document.getElementById('iconFlashFoto').innerText = flashFotoOn ? 'flash_on' : 'flash_off';
+            } else {
+                alert("Flash tidak didukung pada kamera ini.");
+            }
+        } catch(e) { alert("Gagal merubah status flash."); }
+    }
+
+    function getHammingDistance(hash1, hash2) {
+        let distance = 0;
+        for (let i = 0; i < hash1.length; i++) {
+            if (hash1[i] !== hash2[i]) distance++;
+        }
+        return distance;
+    }
+
+    function showScanToast(text) {
+        const toast = document.getElementById('scanToast');
+        document.getElementById('scanToastText').innerText = text;
+        toast.classList.remove('scale-0');
+        toast.classList.add('scale-100');
+        setTimeout(() => {
+            toast.classList.remove('scale-100');
+            toast.classList.add('scale-0');
+        }, 2000);
+    }
+
+    async function autoScanProcess() {
+        if(isScanningPaused) return;
+        const video = document.getElementById('cameraFeed');
+        if(!video.videoWidth) return; // Tunggu video siap
+
+        const scanHash = await generatePerceptualHash(video);
+        let bestMatch = null;
+        let lowestDiff = Infinity;
+
+        for(let p of products) {
+            // Abaikan jika produk tidak punya hash dHash yang valid (64 bit)
+            if(!p.hash || p.hash.length !== 64) continue;
+            const diff = getHammingDistance(scanHash, p.hash);
+            if(diff < lowestDiff) { lowestDiff = diff; bestMatch = p; }
+        }
+
+        // Ambang batas ketat (Toleransi ketidakcocokan maksimal 12 bit dari 64 bit dHash)
+        const THRESHOLD = 12; 
+        if(bestMatch && lowestDiff <= THRESHOLD) {
+            // Hentikan scan sejenak agar tidak masuk ratusan item
+            isScanningPaused = true;
+            updateQty(bestMatch.name, 1);
+            
+            // Tampilkan notifikasi toast hijau
+            showScanToast(bestMatch.name);
+            
+            // Lanjut scan setelah 2,5 detik
+            setTimeout(() => { isScanningPaused = false; }, 2500);
+        }
+    }
+
+    // --- MODUL SCANNER 2: BARCODE & QR CODE (Html5Qrcode) ---
     let html5QrcodeScanner = null;
-    let currentBarcodeTarget = ''; 
+    let currentBarcodeTarget = 'kasir'; 
     let flashBarcodeOn = false;
 
-    function openBarcodeScanner(target, scanType) {
+    function openBarcodeScanner(target) {
         currentBarcodeTarget = target;
         document.getElementById('modalBarcodeScanner').classList.remove('hidden');
         flashBarcodeOn = false;
         document.getElementById('iconFlashBarcode').innerText = 'flash_off';
 
-        let formats = [];
-        const titleEl = document.getElementById('scannerTitle');
-        
-        if (scanType === 'QR') {
-            formats = [ Html5QrcodeSupportedFormats.QR_CODE ];
-            titleEl.innerHTML = '<span class="material-icons-round text-primary">qr_code_2</span> Scan QR Code';
-        } else if (scanType === 'BARCODE') {
-            formats = [ 
-                Html5QrcodeSupportedFormats.EAN_13, 
-                Html5QrcodeSupportedFormats.CODE_128, 
-                Html5QrcodeSupportedFormats.UPC_A,
-                Html5QrcodeSupportedFormats.EAN_8,
-                Html5QrcodeSupportedFormats.CODE_39
-            ];
-            titleEl.innerHTML = '<span class="material-icons-round text-primary">view_barcode</span> Scan Kode Batang';
-        }
-
         html5QrcodeScanner = new Html5Qrcode("barcodeReader");
-        
         const config = { 
             fps: 15, 
             qrbox: function(width, height) {
-                if (scanType === 'BARCODE') {
-                    return { width: Math.floor(width * 0.85), height: Math.floor(height * 0.45) }; 
-                }
-                const size = Math.floor(Math.min(width, height) * 0.7); 
-                return { width: size, height: size }; 
-            },
-            aspectRatio: 1.0,
-            formatsToSupport: formats
+                const minEdge = Math.min(width, height);
+                const boxSize = Math.floor(minEdge * 0.65);
+                return { width: boxSize, height: Math.floor(boxSize * 0.6) };
+            }
         };
 
         html5QrcodeScanner.start(
@@ -720,7 +942,7 @@
             (decodedText) => { handleBarcodeScanned(decodedText); },
             (error) => {}
         ).catch(err => {
-            alert("Gagal mengaktifkan kamera scanner.");
+            alert("Gagal mengaktifkan kamera barcode.");
             closeBarcodeScanner();
         });
     }
@@ -742,30 +964,37 @@
                 if('torch' in caps) {
                     flashBarcodeOn = !flashBarcodeOn;
                     await track.applyConstraints({ advanced: [{ torch: flashBarcodeOn }] });
-                    document.getElementById('iconFlashBarcode').innerText = flashBarcodeOn ? 'flash_on' : 'flash_off';
+                    document.getElementById('iconFlashBarcode').innerText = flashBarcodeOn ? 'torch_on' : 'flash_off';
                 } else {
                     alert("Flash tidak tersedia di perangkat ini.");
                 }
             } else { alert("Kamera belum siap."); }
-        } catch(e) { alert("Gagal mengontrol flash scanner."); }
+        } catch(e) { alert("Gagal mengontrol flash barcode."); }
     }
 
+    // PERBAIKAN: Handler Scanner agar Mendukung Pencarian Struk di Tab Riwayat
     function handleBarcodeScanned(code) {
         closeBarcodeScanner();
         if(currentBarcodeTarget === 'kasir') {
-            const hit = products.find(p => p.barcode === code || p.qr === code);
+            const hit = products.find(p => p.barcode === code);
             if(hit) {
                 updateQty(hit.name, 1);
-                alert(`Kode Cocok: ${hit.name} (Berhasil ditambah ke keranjang)`);
+                alert(`Barcode Cocok: ${hit.name} (Berhasil ditambah ke keranjang)`);
             } else {
                 alert(`Kode "${code}" tidak ditemukan di katalog produk.`);
             }
-        } else if(currentBarcodeTarget === 'produk_barcode') {
+        } else if(currentBarcodeTarget === 'produk') {
             document.getElementById('pBarcode').value = code;
             alert(`Kode Batang Berhasil Dimasukkan: ${code}`);
-        } else if(currentBarcodeTarget === 'produk_qr') {
-            document.getElementById('pQR').value = code;
-            alert(`QR Code Berhasil Dimasukkan: ${code}`);
+        } else if(currentBarcodeTarget === 'riwayat') {
+            document.getElementById('inputCariRiwayat').value = code;
+            renderTrx();
+            const hitTrx = transactions.find(t => t.id.toUpperCase() === code.toUpperCase());
+            if(hitTrx) {
+                showStruk(hitTrx);
+            } else {
+                alert(`Transaksi dengan ID nomor "${code}" tidak ditemukan di database.`);
+            }
         }
     }
 
