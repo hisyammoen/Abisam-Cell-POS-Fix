@@ -319,9 +319,9 @@
             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Metode Bayar</p>
             <div class="relative">
                 <select id="payMethod" onchange="handlePayMethodChange()" class="w-full rounded-2xl border-none bg-slate-100 dark:bg-slate-800 font-bold py-4 pl-4 pr-10 appearance-none focus:ring-primary">
-                    <option value="TUNAI">💵 TUNAI / CASH</option>
+                    <option value="TUNAI">💰 TUNAI / CASH</option>
                     <option value="QRIS">📱 QRIS / E-WALLET</option>
-                    <option value="TRANSFER">🏦 TRANSFER BANK</option>
+                    <option value="TRANSFER">💳 TRANSFER BANK</option>
                 </select>
                 <span class="material-icons-round absolute right-4 top-4 pointer-events-none">expand_more</span>
             </div>
@@ -367,7 +367,8 @@
             </div>
             
             <div class="flex flex-col items-center justify-center my-4 pt-3 border-t border-dashed border-black">
-                <img id="sTrxBarcodeImage" src="" class="w-28 h-28 mb-1 hidden" alt="QR Transaksi">
+                <!-- DITAMBAHKAN crossorigin="anonymous" DISINI -->
+                <img id="sTrxBarcodeImage" src="" crossorigin="anonymous" class="w-28 h-28 mb-1 hidden" alt="QR Transaksi">
                 <span id="sTrxBarcodeText" class="font-mono text-[11px] tracking-widest font-bold"></span>
             </div>
 
@@ -536,7 +537,6 @@
         closeCheckoutPage(); showStruk(trx); cart = {}; updateCartFooter(); renderProds(); renderTrx(); calcStats();
     }
 
-    // --- PERBAIKAN: CODES UNTUK LOGIK RIWAYAT (TAB LAPORAN) ---
     function renderTrx() {
         const query = document.getElementById('inputCariRiwayat').value.toLowerCase();
         const list = document.getElementById('listRiwayat');
@@ -622,7 +622,6 @@
         t.items.forEach(it => { list.innerHTML += `<div class="flex justify-between items-start"><span class="w-1/2">${it.name} <br/><span class="opacity-70">x${it.qty}</span></span><span class="w-1/2 text-right">${(it.price*it.qty).toLocaleString()}</span></div>`; });
         document.getElementById('sDispTotal').innerText = "Rp " + t.total.toLocaleString(); document.getElementById('sDispPay').innerText = t.pay; document.getElementById('sDispCash').innerText = "Rp " + t.cash.toLocaleString(); document.getElementById('sDispChange').innerText = "Rp " + (t.cash - t.total).toLocaleString();
         
-        // FITUR BARU: Generate QR Code instan berbasis API dari ID Transaksi
         const qrImg = document.getElementById('sTrxBarcodeImage');
         if(qrImg) {
             qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${t.id}`;
@@ -681,11 +680,35 @@
     }
 
     function closeStrukModal() { document.getElementById('modalStruk').classList.add('hidden'); }
+    
+    // --- FITUR SHARE & DOWNLOAD YANG SUDAH DIPERBAIKI ---
     async function shareStruk() {
-        try { const canvas = await html2canvas(document.getElementById('areaStruk'), {scale: 2}); canvas.toBlob(blob => { const file = new File([blob], "struk.png", {type: "image/png"}); if (navigator.share) navigator.share({files: [file]}); }); } catch(e) { console.error(e); }
+        try { 
+            // Tambahkan useCORS dan allowTaint agar gambar QR Code terbaca html2canvas
+            const canvas = await html2canvas(document.getElementById('areaStruk'), {
+                scale: 2, 
+                useCORS: true, 
+                allowTaint: true
+            }); 
+            
+            canvas.toBlob(blob => { 
+                const file = new File([blob], "struk.png", {type: "image/png"}); 
+                if (navigator.share && navigator.canShare && navigator.canShare({files: [file]})) {
+                    navigator.share({files: [file]}); 
+                } else {
+                    // Fallback jika API share tidak jalan (contoh: diunduh via PC)
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = "Struk_" + (currentTrx ? currentTrx.id : "Transaksi") + ".png";
+                    a.click();
+                }
+            }); 
+        } catch(e) { 
+            console.error(e); 
+            alert('Gagal memproses gambar struk.');
+        }
     }
 
-    // --- ALGORITMA BARU: dHash (Difference Hash) & Perfect Center Crop ---
     function resizeImageForStorage(file, maxSize) {
         return new Promise((resolve) => {
             const reader = new FileReader();
@@ -709,20 +732,17 @@
     function generatePerceptualHash(source) {
         return new Promise((resolve) => {
             const canvas = document.createElement('canvas');
-            canvas.width = 9;  // dHash membutuhkan lebar +1 untuk membandingkan piksel sebelahnya
+            canvas.width = 9;  
             canvas.height = 8;
             const ctx = canvas.getContext('2d');
             
-            // Dapatkan dimensi asli
             let sWidth = source instanceof HTMLVideoElement ? source.videoWidth : source.width;
             let sHeight = source instanceof HTMLVideoElement ? source.videoHeight : source.height;
             
-            // WAJIB: Center Crop Geometris Simetris. Biar perhitungan matematika gambar asli & kamera SAMA PERSIS.
             const size = Math.min(sWidth, sHeight);
             const sx = (sWidth - size) / 2;
             const sy = (sHeight - size) / 2;
             
-            // Gambar crop bagian tengah tepat ke canvas 9x8
             ctx.drawImage(source, sx, sy, size, size, 0, 0, 9, 8);
             
             const imgData = ctx.getImageData(0,0,9,8).data;
@@ -736,8 +756,6 @@
                 for(let x=0; x<8; x++) {
                     const left = grayscales[y * 9 + x];
                     const right = grayscales[y * 9 + x + 1];
-                    // Jika piksel kiri lebih terang dari kanan, beri nilai 1, sebaliknya 0.
-                    // Ini membunuh masalah "pencahayaan/brightness" kamera.
                     hash += left > right ? '1' : '0';
                 }
             }
@@ -756,7 +774,7 @@
         img.onload = async () => { 
             tempPhotoHash = await generatePerceptualHash(img); 
         };
-        img.src = tempPhotoData; // Hash dibuat SETELAH gambar selesai dimuat dengan ukuran baru
+        img.src = tempPhotoData;
     }
 
     function renderKatalog() {
@@ -803,7 +821,7 @@
             document.getElementById('pBarcode').value=''; 
             document.getElementById('pLabel').value='';
             document.getElementById('pPhoto').value='';
-            document.getElementById('pCamera').value=''; // Bersihkan input kamera juga
+            document.getElementById('pCamera').value='';
             document.getElementById('pPhotoPreview').classList.add('hidden');
             document.getElementById('pPhotoPreview').src = '';
             
@@ -836,7 +854,6 @@
         try {
             cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
             video.srcObject = cameraStream;
-            // Jalankan scanning secara otomatis setiap 800 milidetik
             scanInterval = setInterval(autoScanProcess, 800);
         } catch (err) {
             alert("Tidak dapat mengakses kamera.");
@@ -887,30 +904,23 @@
     async function autoScanProcess() {
         if(isScanningPaused) return;
         const video = document.getElementById('cameraFeed');
-        if(!video.videoWidth) return; // Tunggu video siap
+        if(!video.videoWidth) return;
 
         const scanHash = await generatePerceptualHash(video);
         let bestMatch = null;
         let lowestDiff = Infinity;
 
         for(let p of products) {
-            // Abaikan jika produk tidak punya hash dHash yang valid (64 bit)
             if(!p.hash || p.hash.length !== 64) continue;
             const diff = getHammingDistance(scanHash, p.hash);
             if(diff < lowestDiff) { lowestDiff = diff; bestMatch = p; }
         }
 
-        // Ambang batas ketat (Toleransi ketidakcocokan maksimal 12 bit dari 64 bit dHash)
         const THRESHOLD = 12; 
         if(bestMatch && lowestDiff <= THRESHOLD) {
-            // Hentikan scan sejenak agar tidak masuk ratusan item
             isScanningPaused = true;
             updateQty(bestMatch.name, 1);
-            
-            // Tampilkan notifikasi toast hijau
             showScanToast(bestMatch.name);
-            
-            // Lanjut scan setelah 2,5 detik
             setTimeout(() => { isScanningPaused = false; }, 2500);
         }
     }
@@ -972,7 +982,6 @@
         } catch(e) { alert("Gagal mengontrol flash barcode."); }
     }
 
-    // PERBAIKAN: Handler Scanner agar Mendukung Pencarian Struk di Tab Riwayat
     function handleBarcodeScanned(code) {
         closeBarcodeScanner();
         if(currentBarcodeTarget === 'kasir') {
